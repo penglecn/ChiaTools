@@ -11,7 +11,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tabMineWidget.setMainWindow(self)
         self.tabWidget.indexOf(self.tabMineWidget)
 
-        self.setWindowTitle('ChiaTools - 1.0')
+        self.setWindowTitle('ChiaTools - 1.1')
 
     def closeEvent(self, event):
         if self.tabMineWidget.mine_process:

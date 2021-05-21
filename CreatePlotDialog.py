@@ -192,11 +192,11 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         hdd_usage = psutil.disk_usage(hdd_folder)
 
         if not is_debug() and ssd_usage.free < 2**30*332:
-            QMessageBox.information(self, '提示', '临时目录的空间不够332G')
-            return
+            if QMessageBox.information(self, '提示', '临时目录的空间不够332G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                return
         if not is_debug() and hdd_usage.free < 2**30*102:
-            QMessageBox.information(self, '提示', '最终目录的空间不够101G')
-            return
+            if QMessageBox.information(self, '提示', '最终目录的空间不够101G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                return
 
         self.task.create_time = datetime.now()
         self.task.fpk = fpk
