@@ -43,6 +43,7 @@ class MineWidget(QWidget, Ui_MineWidget):
             self.editMinerName.setText(config['miner_name'])
         else:
             self.editMinerName.setText(socket.gethostname())
+            self.saveMineConfig()
         self.editMinerName.editingFinished.connect(self.saveMineConfig)
 
         if 'apikey' in config:

@@ -291,11 +291,9 @@ class PlotWorker(QThread):
                 return p
 
             ps = p.children()
-            if len(ps) != 1:
-                return None
-            p = ps[0]
-            if p.name().lower() == 'proofofspace.exe':
-                return p
+            for child in ps:
+                if child.name().lower() == 'proofofspace.exe':
+                    return child
             return None
         except Exception as e:
             return None
@@ -563,7 +561,7 @@ class PlotWorker(QThread):
         else:
             return False
 
-        if plat == 'Windows' and 'DEBUG' in os.environ and os.environ['DEBUG'] == '1':
+        if plat == 'Windows' and core.is_debug():
             bin_file = 'test.exe'
 
         exe_cwd = os.path.join(BASE_DIR, 'bin', folder, 'plotter')
