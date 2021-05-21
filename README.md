@@ -14,5 +14,8 @@
 ![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot01.png)
 ![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/mine01.png)
 
-下载地址
+#### 下载地址
 https://gitee.com/devteamcn/chia-tools/releases
+
+#### 使用方法
+解压后进入目录，找到ChiaTools.exe，双击运行
