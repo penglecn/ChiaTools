@@ -165,6 +165,11 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             QMessageBox.information(self, '提示', '请输入ppk')
             return
 
+        if not fpk.startswith('0x'):
+            fpk = '0x' + fpk
+        if not ppk.startswith('0x'):
+            ppk = '0x' + ppk
+
         if not specify_count:
             number = 1
 
