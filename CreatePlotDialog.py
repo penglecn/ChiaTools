@@ -65,6 +65,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.spinBucketNum.setValue(task.buckets)
             self.comboK.setCurrentText(f'{task.k}')
+            self.checkBoxBitfield.setChecked(task.bitfield)
 
             self.setWindowTitle('编辑P图任务')
 
@@ -125,6 +126,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if 'k' in config:
                 self.comboK.setCurrentText(f"{config['k']}")
 
+            self.checkBoxBitfield.setChecked(True)
+            if 'bitfield' in config:
+                self.checkBoxBitfield.setChecked(config['bitfield'])
+
     def aboutPublicKey(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词，但fpk和ppk需要使用助记词来获取。请使用第三方工具（如：HPool提供的签名软件等）来生成。')
 
@@ -137,18 +142,21 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             memory_size = self.spinMemory.value()
             buckets = self.spinBucketNum.value()
             k = int(self.comboK.currentText())
+            bitfield = self.checkBoxBitfield.isChecked()
 
             self.task.hdd_folder = self.comboHDD.currentData(Qt.UserRole)
             self.task.number_of_thread = thread_num
             self.task.memory_size = memory_size
             self.task.buckets = buckets
             self.task.k = k
+            self.task.bitfield = bitfield
             super().accept()
             return
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
         buckets = self.spinBucketNum.value()
         k = int(self.comboK.currentText())
+        bitfield = self.checkBoxBitfield.isChecked()
 
         ssd_folder = self.comboSSD.currentData()
         hdd_folder = self.comboHDD.currentData()
@@ -194,6 +202,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         config['ppk'] = ppk
         config['buckets'] = buckets
         config['k'] = k
+        config['bitfield'] = bitfield
         config['specify_count'] = specify_count
         config['num'] = number
         config['thread_num'] = thread_num
@@ -225,6 +234,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.task.ppk = ppk
         self.task.buckets = buckets
         self.task.k = k
+        self.task.bitfield = bitfield
         self.task.ssd_folder = ssd_folder
         self.task.hdd_folder = hdd_folder
         self.task.temporary_folder = temporary_folder
