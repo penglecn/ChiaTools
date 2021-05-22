@@ -63,6 +63,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.timeEditDelay.setDisabled(True)
 
+            self.spinBucketNum.setValue(task.buckets)
+            self.comboK.setCurrentText(f'{task.k}')
+
             self.setWindowTitle('编辑P图任务')
 
             self.buttonBox.button(self.buttonBox.Ok).setText('修改')
@@ -116,6 +119,12 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 if config['specify_count']:
                     self.spinNumber.setDisabled(False)
 
+            if 'buckets' in config:
+                self.spinBucketNum.setValue(config['buckets'])
+
+            if 'k' in config:
+                self.comboK.setCurrentText(f"{config['k']}")
+
     def aboutPublicKey(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词，但fpk和ppk需要使用助记词来获取。请使用第三方工具（如：HPool提供的签名软件等）来生成。')
 
@@ -126,14 +135,20 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if self.modify:
             thread_num = self.spinThreadNum.value()
             memory_size = self.spinMemory.value()
+            buckets = self.spinBucketNum.value()
+            k = int(self.comboK.currentText())
 
             self.task.hdd_folder = self.comboHDD.currentData(Qt.UserRole)
             self.task.number_of_thread = thread_num
             self.task.memory_size = memory_size
+            self.task.buckets = buckets
+            self.task.k = k
             super().accept()
             return
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
+        buckets = self.spinBucketNum.value()
+        k = int(self.comboK.currentText())
 
         ssd_folder = self.comboSSD.currentData()
         hdd_folder = self.comboHDD.currentData()
@@ -177,6 +192,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         config['fpk'] = fpk
         config['ppk'] = ppk
+        config['buckets'] = buckets
+        config['k'] = k
         config['specify_count'] = specify_count
         config['num'] = number
         config['thread_num'] = thread_num
@@ -193,12 +210,12 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             QMessageBox.information(self, '提示', '创建临时目录失败 %s' % temporary_folder)
             return
 
-        ssd_usage = psutil.disk_usage(ssd_folder)
+        # ssd_usage = psutil.disk_usage(ssd_folder)
         hdd_usage = psutil.disk_usage(hdd_folder)
 
-        if not is_debug() and ssd_usage.free < 2**30*332:
-            if QMessageBox.information(self, '提示', '临时目录的空间不够332G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
-                return
+        # if not is_debug() and ssd_usage.free < 2**30*332:
+        #     if QMessageBox.information(self, '提示', '临时目录的空间不够332G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+        #         return
         if not is_debug() and hdd_usage.free < 2**30*102:
             if QMessageBox.information(self, '提示', '最终目录的空间不够101G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                 return
@@ -206,6 +223,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.task.create_time = datetime.now()
         self.task.fpk = fpk
         self.task.ppk = ppk
+        self.task.buckets = buckets
+        self.task.k = k
         self.task.ssd_folder = ssd_folder
         self.task.hdd_folder = hdd_folder
         self.task.temporary_folder = temporary_folder

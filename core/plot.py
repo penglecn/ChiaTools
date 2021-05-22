@@ -28,6 +28,8 @@ class PlotTask(QObject):
 
         self.fpk = ''
         self.ppk = ''
+        self.k = 32
+        self.buckets = 128
         self.ssd_folder = ''
         self.hdd_folder = ''
         self.temporary_folder = ''
@@ -228,6 +230,8 @@ class PlotSubTask(QObject):
 
         self.plot_file = ''
         self.hdd_folder = task.hdd_folder
+        self.k = task.k
+        self.buckets = task.buckets
 
         self.log = []
 
@@ -324,41 +328,52 @@ class PlotWorker(QThread):
             if self.table == 'Backpropagating on table 7':
                 self.sub_task.progress = 29.167
                 self.updateTask()
+        # Progress: 45.833
+        elif text.startswith('Progress: '):
+            if self.sub_task.buckets == 128:
+                return
+            if self.phase == 1 or self.phase == 4:
+                return
+            r = re.compile(r'Progress: (.*)')
+            found = re.findall(r, text)
+            if not found:
+                return
+            progress = float(found[0])
+            if progress > 100.0 or progress < 0.0:
+                return
+            self.sub_task.progress = progress
         elif text.startswith('Bucket'):
             r = re.compile(r'Bucket (\d*) ')
             found = re.findall(r, text)
             if not found:
                 return
             self.bucket = int(found[0])
+            total_bucket = self.sub_task.buckets - 1
 
             if self.phase == 1:
                 if self.table == 'Computing table 2':
                     base_progress = 0.0
                     max_progress = 4.167
-                    total_bucket = 127
                 elif self.table == 'Computing table 3':
                     base_progress = 4.167
                     max_progress = 8.333
-                    total_bucket = 127
                 elif self.table == 'Computing table 4':
                     base_progress = 8.333
                     max_progress = 12.500
-                    total_bucket = 127
                 elif self.table == 'Computing table 5':
                     base_progress = 12.500
                     max_progress = 16.667
-                    total_bucket = 127
                 elif self.table == 'Computing table 6':
                     base_progress = 16.667
                     max_progress = 20.833
-                    total_bucket = 127
                 elif self.table == 'Computing table 7':
                     base_progress = 20.833
                     max_progress = 25.000
-                    total_bucket = 127
                 else:
                     return
             elif self.phase == 2:
+                if self.sub_task.buckets != 128:
+                    return
                 if self.table == 'Backpropagating on table 6':
                     base_progress = 29.167
                     max_progress = 33.333
@@ -382,6 +397,8 @@ class PlotWorker(QThread):
                 else:
                     return
             elif self.phase == 3:
+                if self.sub_task.buckets != 128:
+                    return
                 if self.table == 'Compressing tables 1 and 2':
                     base_progress = 50.000
                     max_progress = 54.167
@@ -421,7 +438,7 @@ class PlotWorker(QThread):
             elif self.phase == 4:
                 base_progress = 75.000
                 max_progress = 99.000
-                total_bucket = 127
+                total_bucket = self.sub_task.buckets - 1
             else:
                 return
             # bucket_progress = 100 * self.bucket / total_bucket
@@ -473,7 +490,10 @@ class PlotWorker(QThread):
         elif text.startswith('Renamed final file from'):
             finished = True
 
-        self.handleProgress(text)
+        try:
+            self.handleProgress(text)
+        except:
+            pass
 
         return failed, finished
 
@@ -578,6 +598,8 @@ class PlotWorker(QThread):
             '-d', t.hdd_folder,
             '-t', t.temporary_folder,
             '-2', t.temporary_folder,
+            '-u', f'{t.buckets}',
+            '-k', f'{t.k}',
         ]
 
         while True:
