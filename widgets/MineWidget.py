@@ -159,7 +159,7 @@ class MineWidget(QWidget, Ui_MineWidget):
         self.buttonStart.setText('开始挖矿')
 
         index = self.main_window.tabWidget.indexOf(self.main_window.tabMine)
-        self.main_window.tabWidget.setTabText(index, '矿池挖矿')
+        self.main_window.tabWidget.setTabText(index, 'HPool矿池挖矿')
 
         if self.mine_restarting:
             self.mine_restarting = False
@@ -248,7 +248,7 @@ class MineWidget(QWidget, Ui_MineWidget):
         self.buttonStart.setText('停止挖矿')
 
         index = self.main_window.tabWidget.indexOf(self.main_window.tabMine)
-        self.main_window.tabWidget.setTabText(index, '矿池挖矿（正在挖矿）')
+        self.main_window.tabWidget.setTabText(index, 'HPool矿池挖矿（正在挖矿）')
 
     def generateMineConfig(self):
         config = get_config()
@@ -322,6 +322,7 @@ debug: ""
             folder = 'linux'
             bin_file = 'hpool-miner-chia'
         else:
+            self.signalMineLog.emit(f'unknown platform {plat}')
             return False
 
         config_file = os.path.join(BASE_DIR, 'bin', folder, 'miner', 'config.yaml')
