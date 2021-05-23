@@ -683,12 +683,6 @@ class PlotWorker(QThread):
             elif not success or not finished:
                 stop = failed = True
                 self.sub_task.status = '失败'
-                for i in range(self.task.current_task_index + 1, self.task.count):
-                    rest_sub_task = self.task.sub_tasks[i]
-                    rest_sub_task.success = False
-                    rest_sub_task.status = '失败'
-                    rest_sub_task.finish = True
-                    self.updateTask(sub_task=rest_sub_task)
             elif not os.path.exists(plot_path) and not is_debug():
                 stop = failed = True
                 self.sub_task.status = 'plot文件不存在'
@@ -712,6 +706,13 @@ class PlotWorker(QThread):
                 self.sub_task.success = False
                 self.sub_task.finish = True
                 self.sub_task.end_time = datetime.now()
+
+                for i in range(self.task.current_task_index + 1, self.task.count):
+                    rest_sub_task = self.task.sub_tasks[i]
+                    rest_sub_task.success = False
+                    rest_sub_task.status = self.sub_task.status
+                    rest_sub_task.finish = True
+                    self.updateTask(sub_task=rest_sub_task)
 
                 break
 
