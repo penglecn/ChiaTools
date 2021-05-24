@@ -4,6 +4,30 @@ from queue import Queue
 import psutil
 import os
 from datetime import datetime, timedelta
+from utils.lock import RWlock
+
+
+__disk_usage_cache = {}
+__disk_cache_lock = RWlock()
+
+
+def set_disk_usage(folder, usage):
+    __disk_cache_lock.write_acquire()
+    __disk_usage_cache[folder] = usage
+    __disk_cache_lock.write_release()
+
+
+def get_disk_usage(folder):
+    __disk_cache_lock.read_acquire()
+    if folder not in __disk_usage_cache:
+        __disk_cache_lock.read_release()
+        usage = psutil.disk_usage(folder)
+        set_disk_usage(folder, usage)
+    else:
+        usage = __disk_usage_cache[folder]
+        __disk_cache_lock.read_release()
+
+    return usage
 
 
 class DiskOperation(QThread):
@@ -48,6 +72,8 @@ class DiskOperation(QThread):
                 folder_usage['free'] = usage.free
                 folder_usage['total'] = usage.total
                 folder_usage['percent'] = usage.percent
+
+                set_disk_usage(folder, usage)
             except:
                 pass
 

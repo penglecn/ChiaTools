@@ -8,6 +8,7 @@ from utils import make_name, size_to_str
 from datetime import datetime
 import psutil
 from core import is_debug
+from core.disk import get_disk_usage
 
 
 class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
@@ -39,7 +40,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 folder = hdd_folder_obj['folder']
                 text = folder
                 if os.path.exists(folder):
-                    usage = psutil.disk_usage(folder)
+                    usage = get_disk_usage(folder)
                     text += f" ({size_to_str(usage.free)}空闲)"
                 else:
                     text += " (不存在)"
@@ -77,7 +78,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             for ssd_folder in config['ssd_folders']:
                 text = ssd_folder
                 if os.path.exists(ssd_folder):
-                    usage = psutil.disk_usage(ssd_folder)
+                    usage = get_disk_usage(ssd_folder)
                     text += f" ({size_to_str(usage.free)}空闲)"
                 else:
                     text += " (不存在)"
@@ -91,7 +92,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 folder = hdd_folder_obj['folder']
                 text = folder
                 if os.path.exists(folder):
-                    usage = psutil.disk_usage(folder)
+                    usage = get_disk_usage(folder)
                     text += f" ({size_to_str(usage.free)}空闲)"
                 else:
                     text += " (不存在)"
@@ -219,8 +220,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             QMessageBox.information(self, '提示', '创建临时目录失败 %s' % temporary_folder)
             return
 
-        # ssd_usage = psutil.disk_usage(ssd_folder)
-        hdd_usage = psutil.disk_usage(hdd_folder)
+        # ssd_usage = get_disk_usage(ssd_folder)
+        hdd_usage = get_disk_usage(hdd_folder)
 
         # if not is_debug() and ssd_usage.free < 2**30*332:
         #     if QMessageBox.information(self, '提示', '临时目录的空间不够332G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
