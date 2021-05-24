@@ -36,6 +36,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.comboSSD.setDisabled(True)
 
             current_index = 0
+            self.comboHDD.addItem('自动', 'auto')
             for hdd_folder_obj in config['hdd_folders']:
                 folder = hdd_folder_obj['folder']
                 text = folder
@@ -47,7 +48,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 if folder == task.hdd_folder:
                     current_index = self.comboHDD.count()
                 self.comboHDD.addItem(text, folder)
-            self.comboHDD.setCurrentIndex(current_index)
+            if self.task.auto_hdd_folder:
+                self.comboHDD.setCurrentIndex(0)
+            else:
+                self.comboHDD.setCurrentIndex(current_index)
 
             self.editFpk.setPlainText(task.fpk)
             self.editFpk.setDisabled(True)
@@ -88,6 +92,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.comboSSD.setCurrentIndex(current_index)
 
             current_index = 0
+            self.comboHDD.addItem('自动', 'auto')
             for hdd_folder_obj in config['hdd_folders']:
                 folder = hdd_folder_obj['folder']
                 text = folder
@@ -144,8 +149,14 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             buckets = self.spinBucketNum.value()
             k = int(self.comboK.currentText())
             bitfield = self.checkBoxBitfield.isChecked()
+            hdd_folder = self.comboHDD.currentData(Qt.UserRole)
 
-            self.task.hdd_folder = self.comboHDD.currentData(Qt.UserRole)
+            if hdd_folder == 'auto':
+                self.task.auto_hdd_folder = True
+            else:
+                self.task.auto_hdd_folder = False
+                self.task.hdd_folder = hdd_folder
+
             self.task.number_of_thread = thread_num
             self.task.memory_size = memory_size
             self.task.buckets = buckets
@@ -177,7 +188,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             QMessageBox.information(self, '提示', '临时目录不存在')
             return
 
-        if not os.path.exists(hdd_folder):
+        if hdd_folder != 'auto' and not os.path.exists(hdd_folder):
             QMessageBox.information(self, '提示', '最终目录不存在')
             return
 
@@ -193,6 +204,13 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             fpk = '0x' + fpk
         if not ppk.startswith('0x'):
             ppk = '0x' + ppk
+
+        if len(fpk) != 98:
+            QMessageBox.information(self, '提示', 'fpk格式错误，请检查')
+            return
+        if len(ppk) != 98:
+            QMessageBox.information(self, '提示', 'ppk格式错误，请检查')
+            return
 
         if not specify_count:
             number = 1
@@ -220,15 +238,12 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             QMessageBox.information(self, '提示', '创建临时目录失败 %s' % temporary_folder)
             return
 
-        # ssd_usage = get_disk_usage(ssd_folder)
-        hdd_usage = get_disk_usage(hdd_folder)
+        if hdd_folder != 'auto':
+            hdd_usage = get_disk_usage(hdd_folder)
 
-        # if not is_debug() and ssd_usage.free < 2**30*332:
-        #     if QMessageBox.information(self, '提示', '临时目录的空间不够332G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
-        #         return
-        if not is_debug() and hdd_usage.free < 2**30*102:
-            if QMessageBox.information(self, '提示', '最终目录的空间不够101G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
-                return
+            if not is_debug() and hdd_usage.free < 2**30*102:
+                if QMessageBox.information(self, '提示', '最终目录的空间不够101G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                    return
 
         self.task.create_time = datetime.now()
         self.task.fpk = fpk
@@ -237,7 +252,11 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.task.k = k
         self.task.bitfield = bitfield
         self.task.ssd_folder = ssd_folder
-        self.task.hdd_folder = hdd_folder
+        if hdd_folder == 'auto':
+            self.task.auto_hdd_folder = True
+        else:
+            self.task.auto_hdd_folder = False
+            self.task.hdd_folder = hdd_folder
         self.task.temporary_folder = temporary_folder
         self.task.specify_count = specify_count
         self.task.count = number

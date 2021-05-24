@@ -12,7 +12,9 @@ import psutil
 import pickle
 import platform
 from config import get_config
-import threading
+from utils.lock import RWlock
+from core.disk import get_disk_usage
+import random
 
 
 class PlotTask(QObject):
@@ -33,6 +35,7 @@ class PlotTask(QObject):
         self.bitfield = True
         self.ssd_folder = ''
         self.hdd_folder = ''
+        self.auto_hdd_folder = False
         self.temporary_folder = ''
         self.number_of_thread = 0
         self.memory_size = 0
@@ -659,6 +662,17 @@ class PlotWorker(QThread):
                 time.sleep(1)
                 continue
 
+            if self.task.auto_hdd_folder:
+                available_hdd_folder = PlotTaskManager.choise_available_hdd_folder(self.sub_task.k)
+                if not available_hdd_folder:
+                    self.sub_task.status = '无可用硬盘'
+                    self.sub_task.finish = True
+                    self.sub_task.success = False
+                    self.sub_task.end_time = datetime.now()
+                    self.updateTask()
+                    break
+                self.sub_task.hdd_folder = available_hdd_folder
+
             self.sub_task.begin_time = datetime.now()
             self.sub_task.status = '正在执行'
             self.sub_task.progress = 0
@@ -765,7 +779,7 @@ class PlotTaskManager(QObject):
     signalNewPlot = pyqtSignal(object, object)
 
     tasks = []
-    task_lock = threading.Lock()
+    task_lock = RWlock()
 
     def __init__(self):
         super(PlotTaskManager, self).__init__()
@@ -773,24 +787,72 @@ class PlotTaskManager(QObject):
 
     @property
     def working(self):
+        PlotTaskManager.task_lock.read_acquire()
         for task in PlotTaskManager.tasks:
             if task.working:
+                PlotTaskManager.task_lock.read_release()
                 return True
+        PlotTaskManager.task_lock.read_release()
         return False
+
+    @staticmethod
+    def choise_available_hdd_folder(k):
+        running_folders = []
+        PlotTaskManager.task_lock.read_acquire()
+        for task in PlotTaskManager.tasks:
+            for sub in task.sub_tasks:
+                if sub.working:
+                    running_folders.append((sub.k, sub.hdd_folder))
+        PlotTaskManager.task_lock.read_release()
+
+        def get_k_size(_k):
+            if _k == 32:
+                return 2**30*101.4
+            elif _k == 33:
+                return 2**30*208.8
+            elif _k == 34:
+                return 2**30*429.8
+            elif _k == 35:
+                return 2**30*884.1
+            return 0
+
+        available_folders = []
+        config = get_config()
+        for hdd_folder_obj in config['hdd_folders']:
+            folder = hdd_folder_obj['folder']
+            usage = get_disk_usage(folder)
+            free = usage.free
+            for running_object in running_folders:
+                running_k = running_object[0]
+                running_folder = running_object[1]
+                if running_folder == folder:
+                    free -= get_k_size(running_k)
+            if free > get_k_size(k):
+                available_folders.append(folder)
+
+        if len(available_folders) == 0:
+            return ''
+
+        return random.choice(available_folders)
 
     def add_task(self, task: PlotTask):
         task.signalUpdateTask.connect(self.signalUpdateTask)
         task.signalMakingPlot.connect(self.signalMakingPlot)
         task.signalNewPlot.connect(self.signalNewPlot)
 
+        PlotTaskManager.task_lock.write_acquire()
         PlotTaskManager.tasks.append(task)
+        PlotTaskManager.task_lock.write_release()
         self.save_tasks()
 
     def remove_task(self, task: PlotTask):
+        PlotTaskManager.task_lock.write_acquire()
         PlotTaskManager.tasks.remove(task)
+        PlotTaskManager.task_lock.write_release()
         self.save_tasks()
 
     def load_tasks(self):
+        PlotTaskManager.task_lock.write_acquire()
         filename = os.path.join(BASE_DIR, 'tasks.pkl')
         if os.path.exists(filename):
             task_data = open(filename, 'rb').read()
@@ -805,18 +867,22 @@ class PlotTaskManager(QObject):
                     sub_task.finish = True
                 changed = True
 
+        PlotTaskManager.task_lock.write_release()
+
         if changed:
             self.save_tasks()
 
     def save_tasks(self):
         filename = os.path.join(BASE_DIR, 'tasks.pkl')
+        PlotTaskManager.task_lock.read_acquire()
         tasks_data = pickle.dumps(PlotTaskManager.tasks)
+        PlotTaskManager.task_lock.read_release()
         open(filename, 'wb').write(tasks_data)
         return
 
     @staticmethod
     def assign_task(task: PlotTask):
-        PlotTaskManager.task_lock.acquire()
+        PlotTaskManager.task_lock.read_acquire()
 
         config = get_config()
 
@@ -837,13 +903,13 @@ class PlotTaskManager(QObject):
         phase1_limit_count = 'phase1_limit_count' in config and config['phase1_limit_count']
 
         if total_limit and total_count >= total_limit_count:
-            PlotTaskManager.task_lock.release()
+            PlotTaskManager.task_lock.read_release()
             return False
 
         if phase1_limit and phase1_count >= phase1_limit_count:
-            PlotTaskManager.task_lock.release()
+            PlotTaskManager.task_lock.read_release()
             return False
 
         task.running = True
-        PlotTaskManager.task_lock.release()
+        PlotTaskManager.task_lock.read_release()
         return True

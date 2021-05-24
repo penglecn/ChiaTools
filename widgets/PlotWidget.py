@@ -517,7 +517,13 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         item.setText(index, task.ssd_folder)
 
         index += 1
-        item.setText(index, task.hdd_folder)
+        if task.auto_hdd_folder:
+            if task.specify_count or not task.current_sub_task.hdd_folder:
+                item.setText(index, '自动')
+            else:
+                item.setText(index, f'{task.current_sub_task.hdd_folder}(自动)')
+        else:
+            item.setText(index, task.hdd_folder)
 
         index += 1
         delay = task.delay_remain()
