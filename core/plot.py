@@ -304,6 +304,23 @@ class PlotWorker(QThread):
         except Exception as e:
             return None
 
+    @property
+    def able_to_calc_progress(self):
+        buckets = self.sub_task.buckets
+
+        if self.phase == 1:
+            return True
+        elif self.phase == 2:
+            if self.sub_task.bitfield:
+                return False
+            return buckets == 128
+        elif self.phase == 3:
+            return buckets == 128
+        elif self.phase == 4:
+            return True
+
+        return False
+
     def handleProgress(self, text):
         if text.startswith('Starting phase 1/4'):
             self.phase = 1
@@ -330,21 +347,10 @@ class PlotWorker(QThread):
             if self.table == 'Backpropagating on table 7':
                 self.sub_task.progress = 29.167
                 self.updateTask()
-        # Progress: 45.833
-        elif text.startswith('Progress: '):
-            if self.sub_task.buckets == 128:
-                return
-            if self.phase == 1 or self.phase == 4:
-                return
-            r = re.compile(r'Progress: (.*)')
-            found = re.findall(r, text)
-            if not found:
-                return
-            progress = float(found[0])
-            if progress > 100.0 or progress < 0.0:
-                return
-            self.sub_task.progress = progress
         elif text.startswith('Bucket'):
+            if not self.able_to_calc_progress:
+                return
+
             r = re.compile(r'Bucket (\d*) ')
             found = re.findall(r, text)
             if not found:
@@ -404,7 +410,9 @@ class PlotWorker(QThread):
                 if self.table == 'Compressing tables 1 and 2':
                     base_progress = 50.000
                     max_progress = 54.167
-                    total_bucket = 127
+                    total_bucket = 102 + self.sub_task.buckets
+                    if not self.phase3_first_computation:
+                        self.bucket = 102 + 1 + self.bucket
                 elif self.table == 'Compressing tables 2 and 3':
                     base_progress = 54.167
                     max_progress = 58.333
@@ -445,7 +453,12 @@ class PlotWorker(QThread):
                 return
             # bucket_progress = 100 * self.bucket / total_bucket
             # progress = bucket_progress * max_progress / 100
-            self.sub_task.progress = (100*self.bucket/total_bucket) * (max_progress-base_progress) / 100 + base_progress
+            progress = (100*self.bucket/total_bucket) * (max_progress-base_progress) / 100 + base_progress
+
+            if self.sub_task.progress >= progress:
+                return
+
+            self.sub_task.progress = progress
             self.updateTask()
         elif text.startswith('Final File size'):
             self.copying = True
@@ -496,6 +509,15 @@ class PlotWorker(QThread):
             self.handleProgress(text)
         except:
             pass
+
+        if text.startswith('Progress: '):
+            if not self.able_to_calc_progress:
+                r = re.compile(r'Progress: (.*)')
+                found = re.findall(r, text)
+                if found:
+                    progress = float(found[0])
+                    if progress <= 100.0 or progress >= 0.0:
+                        self.sub_task.progress = progress
 
         return failed, finished
 
