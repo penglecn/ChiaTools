@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/Users/peng/Documents/Projects/devteam.cn/ChiaTools/ui/TaskOutputDialog.ui'
+# Form implementation generated from reading ui file 'C:\Users\peng\Desktop\chia-tools\ui\TaskOutputDialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -14,7 +14,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_TaskOutputDialog(object):
     def setupUi(self, TaskOutputDialog):
         TaskOutputDialog.setObjectName("TaskOutputDialog")
-        TaskOutputDialog.resize(1107, 742)
+        TaskOutputDialog.setWindowModality(QtCore.Qt.NonModal)
+        TaskOutputDialog.resize(708, 529)
+        TaskOutputDialog.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
         self.verticalLayout = QtWidgets.QVBoxLayout(TaskOutputDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.edit = QtWidgets.QTextEdit(TaskOutputDialog)

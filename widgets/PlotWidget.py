@@ -152,7 +152,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         action_increase_number = None
         action_reduce_number = None
 
-        if not sub_task_item and task.count != 1:
+        if not sub_task_item and task.specify_count:
             action_detail.setDisabled(True)
 
         if task.finish:
@@ -379,6 +379,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         dlg = TaskOutputDialog(sub_task.worker, task, sub_task)
         dlg.signalClose.connect(self.closeTaskOutputDialog)
+        dlg.setWindowFlags(Qt.Dialog | Qt.WindowMaximizeButtonHint | Qt.WindowCloseButtonHint)
         dlg.show()
 
         self.outputDialogs.append(dlg)
