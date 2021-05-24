@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_CreatePlotDialog(object):
     def setupUi(self, CreatePlotDialog):
         CreatePlotDialog.setObjectName("CreatePlotDialog")
-        CreatePlotDialog.resize(513, 458)
+        CreatePlotDialog.resize(513, 480)
         self.verticalLayout = QtWidgets.QVBoxLayout(CreatePlotDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.formLayout = QtWidgets.QFormLayout()
@@ -93,6 +93,7 @@ class Ui_CreatePlotDialog(object):
         self.comboK.addItem("")
         self.comboK.addItem("")
         self.comboK.addItem("")
+        self.comboK.addItem("")
         self.formLayout.setWidget(5, QtWidgets.QFormLayout.FieldRole, self.comboK)
         self.label_9 = QtWidgets.QLabel(CreatePlotDialog)
         self.label_9.setObjectName("label_9")
@@ -133,6 +134,7 @@ class Ui_CreatePlotDialog(object):
         self.comboK.setItemText(0, _translate("CreatePlotDialog", "32"))
         self.comboK.setItemText(1, _translate("CreatePlotDialog", "33"))
         self.comboK.setItemText(2, _translate("CreatePlotDialog", "34"))
+        self.comboK.setItemText(3, _translate("CreatePlotDialog", "35"))
         self.label_9.setText(_translate("CreatePlotDialog", "开启位域(bitfield)"))
         self.checkBoxBitfield.setText(_translate("CreatePlotDialog", "开启"))
         self.commandLinkButton.setText(_translate("CreatePlotDialog", "关于fpk和ppk"))
