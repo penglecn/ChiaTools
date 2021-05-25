@@ -31,7 +31,7 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=False , uac_admin=True, manifest='ChiaTools.exe.manifest')
+          console=False)
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
