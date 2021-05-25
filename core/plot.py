@@ -233,7 +233,9 @@ class PlotSubTask(QObject):
         self.ram = 0
 
         self.plot_file = ''
-        self.hdd_folder = task.hdd_folder
+        self.hdd_folder = ''
+        if not task.auto_hdd_folder:
+            self.hdd_folder = task.hdd_folder
         self.k = task.k
         self.buckets = task.buckets
         self.bitfield = task.bitfield
@@ -622,7 +624,6 @@ class PlotWorker(QThread):
             '-plotting-n', '1',
             '-r', f'{t.number_of_thread}',
             '-b', f'{t.memory_size}',
-            '-d', t.hdd_folder,
             '-t', t.temporary_folder,
             '-2', t.temporary_folder,
             '-u', f'{t.buckets}',
@@ -672,6 +673,9 @@ class PlotWorker(QThread):
                     self.updateTask()
                     break
                 self.sub_task.hdd_folder = available_hdd_folder
+
+            args.append('-d')
+            args.append(self.sub_task.hdd_folder)
 
             self.sub_task.begin_time = datetime.now()
             self.sub_task.status = '正在执行'
