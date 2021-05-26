@@ -26,6 +26,19 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.checkBoxSpecifyCount.stateChanged.connect(self.checkSpecifyCount)
         self.commandLinkButton.clicked.connect(self.aboutPublicKey)
 
+        self.comboK.addItem('101.4GiB (k=32, 临时文件: 239GiB)', 32)
+        self.comboK.addItem('208.8GiB (k=33, 临时文件: 521GiB)', 33)
+        self.comboK.addItem('429.8GiB (k=34, 临时文件: 1041GiB)', 34)
+        self.comboK.addItem('884.1GiB (k=35, 临时文件: 2175GiB)', 35)
+        self.comboK.setCurrentIndex(0)
+
+        def select_k_combo(k):
+            for i in range(self.comboK.count()):
+                d = self.comboK.itemData(i, Qt.UserRole)
+                if d == k:
+                    self.comboK.setCurrentIndex(i)
+                    return
+
         self.modify = False
 
         if task:
@@ -69,7 +82,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.timeEditDelay.setDisabled(True)
 
             self.spinBucketNum.setValue(task.buckets)
-            self.comboK.setCurrentText(f'{task.k}')
+            # self.comboK.setCurrentText(f'{task.k}')
+            select_k_combo(task.k)
             self.checkBoxBitfield.setChecked(task.bitfield)
 
             self.setWindowTitle('编辑P图任务')
@@ -130,7 +144,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 self.spinBucketNum.setValue(config['buckets'])
 
             if 'k' in config:
-                self.comboK.setCurrentText(f"{config['k']}")
+                # self.comboK.setCurrentText(f"{config['k']}")
+                select_k_combo(config['k'])
 
             self.checkBoxBitfield.setChecked(True)
             if 'bitfield' in config:
@@ -147,7 +162,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             thread_num = self.spinThreadNum.value()
             memory_size = self.spinMemory.value()
             buckets = self.spinBucketNum.value()
-            k = int(self.comboK.currentText())
+            k = int(self.comboK.currentData(Qt.UserRole))
             bitfield = self.checkBoxBitfield.isChecked()
             hdd_folder = self.comboHDD.currentData(Qt.UserRole)
 
@@ -167,7 +182,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
         buckets = self.spinBucketNum.value()
-        k = int(self.comboK.currentText())
+        # k = int(self.comboK.currentText())
+        k = int(self.comboK.currentData(Qt.UserRole))
         bitfield = self.checkBoxBitfield.isChecked()
 
         ssd_folder = self.comboSSD.currentData()
