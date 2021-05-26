@@ -30,6 +30,8 @@ class PlotTask(QObject):
         self.running = False
         self.phase = 1
 
+        self.cmdline = ''
+        self.inner_cmdline = False
         self.fpk = ''
         self.ppk = ''
         self.k = 32
@@ -322,6 +324,8 @@ class PlotWorker(QThread):
                 return p
 
             if p.name().lower() == 'proofofspace.exe':
+                return p
+            if p.name().lower() == 'chia.exe':
                 return p
 
             ps = p.children()
@@ -617,57 +621,70 @@ class PlotWorker(QThread):
         except:
             pass
 
-    def run(self):
+    def build_args(self):
         t = self.task
 
-        plat = platform.system()
-        if plat == 'Windows':
-            folder = 'windows'
-            bin_file = 'ProofOfSpace.exe'
-        elif plat == 'Darwin':
-            folder = 'macos'
-            bin_file = 'chia-plotter-darwin-amd64'
-        elif plat == 'Linux':
-            folder = 'linux'
-            bin_file = 'chia-plotter-linux-amd64'
-        else:
-            return False
-
-        if plat == 'Windows' and core.is_debug():
-            bin_file = 'test.exe'
-
-        exe_cwd = os.path.join(BASE_DIR, 'bin', folder, 'plotter')
-        exe = os.path.join(exe_cwd, bin_file)
-
-        # ./ProofOfSpace.exe
-        # create
-        # -i 0xa5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2
-        #-m 0xaa7c1994158b12b5062b9c351ee089fecc01f8b67d954b828aa0a5e7f638499ed051efbeb3b80e3f49f5111b2fd375a9b8de193be4ffad16ecae6d092541b2021be062a9268e2828c1fedc8fab2d46e13d0ca6c8beb29b90b7045b5888b417240baf2c890af98538238b2d3c9ee31c6eea54a2ee01ee08d126c5cf264494a3ba
-        # -k 32 -f plot-k32-2021-05-08-22-06-a5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2.plot
-        # -r 16 -u 128 -s 65536 -t N:/temporary/gmdttugmxqkq -2 N:/temporary/gmdttugmxqkq -d F:/chia-final -e false -b 7000 -p false
-
         plot_id, plot_memo = get_plot_id_and_memo(t.fpk, t.ppk)
-        dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M")
 
-        plot_filename: str = f"plot-k{t.k}-{dt_string}-{plot_id}.plot"
+        if t.inner_cmdline:
+            dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M")
 
-        args = [
-            exe,
-            'create',
-            '-i', '0x' + plot_id,
-            '-m', '0x' + plot_memo,
-            '-k', f'{t.k}',
-            '-f', plot_filename,
-            '-r', f'{t.number_of_thread}',
-            '-u', f'{t.buckets}',
-            '-s', '65536',
-            '-t', t.temporary_folder,
-            '-2', t.temporary_folder,
-            '-b', f'{t.memory_size}',
-        ]
+            plot_filename: str = f"plot-k{t.k}-{dt_string}-{plot_id}.plot"
+
+            # ./ProofOfSpace.exe
+            # create
+            # -i 0xa5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2
+            #-m 0xaa7c1994158b12b5062b9c351ee089fecc01f8b67d954b828aa0a5e7f638499ed051efbeb3b80e3f49f5111b2fd375a9b8de193be4ffad16ecae6d092541b2021be062a9268e2828c1fedc8fab2d46e13d0ca6c8beb29b90b7045b5888b417240baf2c890af98538238b2d3c9ee31c6eea54a2ee01ee08d126c5cf264494a3ba
+            # -k 32 -f plot-k32-2021-05-08-22-06-a5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2.plot
+            # -r 16 -u 128 -s 65536 -t N:/temporary/gmdttugmxqkq -2 N:/temporary/gmdttugmxqkq -d F:/chia-final -e false -b 7000 -p false
+
+            args = [
+                t.cmdline,
+                'create',
+                '-i', '0x' + plot_id,
+                '-m', '0x' + plot_memo,
+                '-k', f'{t.k}',
+                '-f', plot_filename,
+                '-r', f'{t.number_of_thread}',
+                '-u', f'{t.buckets}',
+                '-s', '65536',
+                '-t', t.temporary_folder,
+                '-2', t.temporary_folder,
+                '-b', f'{t.memory_size}',
+            ]
+        else:
+            fpk = t.fpk
+            ppk = t.ppk
+            if fpk.startswith('0x'):
+                fpk = fpk[2:]
+            if ppk.startswith('0x'):
+                ppk = ppk[2:]
+            args = [
+                t.cmdline,
+                'plots',
+                'create',
+                '-i', plot_id,
+                '-f', fpk,
+                '-p', ppk,
+                '-m', plot_memo,
+                '-x',
+                '-k', f'{t.k}',
+                '-r', f'{t.number_of_thread}',
+                '-u', f'{t.buckets}',
+                '-t', t.temporary_folder,
+                '-2', t.temporary_folder,
+                '-b', f'{t.memory_size}',
+            ]
 
         if not t.bitfield:
             args.append('-e')
+
+        return args
+
+    def run(self):
+        t = self.task
+
+        args = self.build_args()
 
         while True:
             delay_remain = self.task.delay_remain()
@@ -729,6 +746,7 @@ class PlotWorker(QThread):
             self.sub_task.progress = 0
             self.updateTask()
 
+            exe_cwd = os.path.dirname(t.cmdline)
             self.process = Popen(args, stdout=PIPE, stderr=PIPE, cwd=exe_cwd, creationflags=CREATE_NO_WINDOW)
 
             success = True
@@ -881,6 +899,8 @@ class PlotTaskManager(QObject):
         config = get_config()
         for hdd_folder_obj in config['hdd_folders']:
             folder = hdd_folder_obj['folder']
+            if not os.path.exists(folder):
+                continue
             usage = get_disk_usage(folder)
             free = usage.free
             for running_object in running_folders:

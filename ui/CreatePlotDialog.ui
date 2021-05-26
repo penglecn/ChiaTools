@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>513</width>
-    <height>480</height>
+    <height>506</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,51 +16,51 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
         <string>临时目录（固态硬盘）</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="3" column="1">
       <widget class="QComboBox" name="comboSSD"/>
      </item>
-     <item row="1" column="0">
+     <item row="4" column="0">
       <widget class="QLabel" name="label_5">
        <property name="text">
         <string>最终目录（机械硬盘）</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="4" column="1">
       <widget class="QComboBox" name="comboHDD"/>
      </item>
-     <item row="2" column="0">
+     <item row="5" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
         <string>Farmer Public Key(fpk)</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="5" column="1">
       <widget class="QTextEdit" name="editFpk"/>
      </item>
-     <item row="4" column="0">
+     <item row="7" column="0">
       <widget class="QLabel" name="label_3">
        <property name="text">
         <string>Pool Public Key(ppk)</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="7" column="1">
       <widget class="QTextEdit" name="editPpk">
        <property name="sizeAdjustPolicy">
         <enum>QAbstractScrollArea::AdjustIgnored</enum>
        </property>
       </widget>
      </item>
-     <item row="10" column="1">
+     <item row="13" column="1">
       <widget class="QSpinBox" name="spinNumber">
        <property name="enabled">
         <bool>false</bool>
@@ -73,28 +73,28 @@
        </property>
       </widget>
      </item>
-     <item row="11" column="0">
+     <item row="14" column="0">
       <widget class="QLabel" name="label_7">
        <property name="text">
         <string>延迟时间</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="1">
+     <item row="14" column="1">
       <widget class="QTimeEdit" name="timeEditDelay">
        <property name="displayFormat">
         <string>HH:mm:ss</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
+     <item row="10" column="0">
       <widget class="QLabel" name="label_6">
        <property name="text">
         <string>线程数</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="1">
+     <item row="10" column="1">
       <widget class="QSpinBox" name="spinThreadNum">
        <property name="minimum">
         <number>1</number>
@@ -104,14 +104,14 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="0">
+     <item row="9" column="0">
       <widget class="QLabel" name="label_7">
        <property name="text">
         <string>最大内存</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
+     <item row="9" column="1">
       <widget class="QSpinBox" name="spinMemory">
        <property name="suffix">
         <string>MiB</string>
@@ -127,21 +127,21 @@
        </property>
       </widget>
      </item>
-     <item row="10" column="0">
+     <item row="13" column="0">
       <widget class="QCheckBox" name="checkBoxSpecifyCount">
        <property name="text">
         <string>指定数量</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
+     <item row="11" column="0">
       <widget class="QLabel" name="label_4">
        <property name="text">
         <string>桶数(Buckets)</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
+     <item row="11" column="1">
       <widget class="QSpinBox" name="spinBucketNum">
        <property name="minimum">
         <number>1</number>
@@ -154,27 +154,44 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="8" column="0">
       <widget class="QLabel" name="label_8">
        <property name="text">
         <string>Plot大小(K)</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="1">
+     <item row="8" column="1">
       <widget class="QComboBox" name="comboK"/>
      </item>
-     <item row="9" column="0">
+     <item row="12" column="0">
       <widget class="QLabel" name="label_9">
        <property name="text">
         <string>开启位域(bitfield)</string>
        </property>
       </widget>
      </item>
-     <item row="9" column="1">
+     <item row="12" column="1">
       <widget class="QCheckBox" name="checkBoxBitfield">
        <property name="text">
         <string>开启</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_10">
+       <property name="text">
+        <string>P图程序</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboCmdLine"/>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="lineEditCmdLine">
+       <property name="readOnly">
+        <bool>true</bool>
        </property>
       </widget>
      </item>

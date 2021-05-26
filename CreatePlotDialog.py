@@ -7,8 +7,10 @@ import os
 from utils import make_name, size_to_str, get_k_size
 from datetime import datetime
 import psutil
-from core import is_debug
 from core.disk import get_disk_usage
+from PyQt5.QtWidgets import QFileDialog
+from core import BASE_DIR, is_debug
+import platform
 
 
 class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
@@ -33,6 +35,26 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboK.addItem('429.8GiB (k=34, 临时文件: 1041GiB)', 34)
         self.comboK.addItem('884.1GiB (k=35, 临时文件: 2175GiB)', 35)
         self.comboK.setCurrentIndex(0)
+
+        self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
+        chia_exe = self.get_official_chia_exe()
+        if chia_exe:
+            self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
+        self.comboCmdLine.addItem('手动选择', 'select')
+        self.comboCmdLine.currentIndexChanged.connect(self.changeCmdLine)
+        self.comboCmdLine.setCurrentIndex(0)
+        self.changeCmdLine()
+
+        def select_cmdline(cmdline):
+            for i in range(self.comboCmdLine.count()):
+                d = self.comboCmdLine.itemData(i, Qt.UserRole)
+                if d == cmdline:
+                    self.comboCmdLine.setCurrentIndex(i)
+                    return
+
+            self.comboCmdLine.addItem(os.path.basename(cmdline), cmdline)
+            self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
+            self.lineEditCmdLine.setText(cmdline)
 
         def select_k_combo(k):
             for i in range(self.comboK.count()):
@@ -86,6 +108,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.spinBucketNum.setValue(task.buckets)
             select_k_combo(task.k)
             self.checkBoxBitfield.setChecked(task.bitfield)
+            select_cmdline(task.cmdline)
 
             self.setWindowTitle('编辑P图任务')
 
@@ -151,6 +174,55 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if 'bitfield' in config:
                 self.checkBoxBitfield.setChecked(config['bitfield'])
 
+            if 'cmdline' in config:
+                select_cmdline(config['cmdline'])
+
+    def get_builtin_exe(self):
+        plat = platform.system()
+        if plat == 'Windows':
+            folder = 'windows'
+        elif plat == 'Darwin':
+            folder = 'macos'
+        elif plat == 'Linux':
+            folder = 'linux'
+        else:
+            return ''
+        exe_cwd = os.path.join(BASE_DIR, 'bin', folder, 'plotter')
+        return os.path.join(exe_cwd, 'ProofOfSpace.exe')
+
+    def changeCmdLine(self):
+        data = self.comboCmdLine.currentData(Qt.UserRole)
+        if data == 'select':
+            chia_exe = QFileDialog.getOpenFileName(self, '选择钱包chia.exe', directory=os.getenv('LOCALAPPDATA'), filter='chia.exe')[0]
+            self.lineEditCmdLine.setText(chia_exe)
+        else:
+            self.lineEditCmdLine.setText(data)
+
+    @staticmethod
+    def get_official_chia_exe():
+        app_data = os.getenv('LOCALAPPDATA')
+        if app_data is None:
+            return ''
+        folder = os.path.join(app_data, 'chia-blockchain')
+        if not os.path.exists(folder):
+            return ''
+
+        app_folder = ''
+        for o in os.listdir(folder):
+            if not o.startswith('app-'):
+                continue
+            sub_folder = os.path.join(folder, o)
+            if os.path.isdir(sub_folder):
+                app_folder = sub_folder
+
+        if not app_folder:
+            return ''
+
+        chia_exe = os.path.join(app_folder, 'resources', 'app.asar.unpacked', 'daemon', 'chia.exe')
+        if not os.path.exists(chia_exe):
+            return ''
+        return chia_exe
+
     def aboutPublicKey(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词，但fpk和ppk需要使用助记词来获取。请使用第三方工具（如：HPool提供的签名软件等）来生成。')
 
@@ -165,6 +237,11 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             k = int(self.comboK.currentData(Qt.UserRole))
             bitfield = self.checkBoxBitfield.isChecked()
             hdd_folder = self.comboHDD.currentData(Qt.UserRole)
+            cmdline = self.lineEditCmdLine.text()
+
+            if not cmdline:
+                QMessageBox.information(self, '提示', '请选择程序')
+                return
 
             if hdd_folder == 'auto':
                 self.task.auto_hdd_folder = True
@@ -177,6 +254,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.task.buckets = buckets
             self.task.k = k
             self.task.bitfield = bitfield
+            self.task.cmdline = cmdline
+            self.task.inner_cmdline = cmdline == self.get_builtin_exe()
             super().accept()
             return
         fpk = self.editFpk.toPlainText()
@@ -184,6 +263,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         buckets = self.spinBucketNum.value()
         k = int(self.comboK.currentData(Qt.UserRole))
         bitfield = self.checkBoxBitfield.isChecked()
+        cmdline = self.lineEditCmdLine.text()
 
         ssd_folder = self.comboSSD.currentData()
         hdd_folder = self.comboHDD.currentData()
@@ -198,6 +278,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         number = self.spinNumber.value()
         thread_num = self.spinThreadNum.value()
         memory_size = self.spinMemory.value()
+
+        if not cmdline:
+            QMessageBox.information(self, '提示', '请选择程序')
+            return
 
         if not os.path.exists(ssd_folder):
             QMessageBox.information(self, '提示', '临时目录不存在')
@@ -232,6 +316,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         config = get_config()
 
+        config['cmdline'] = cmdline
         config['fpk'] = fpk
         config['ppk'] = ppk
         config['buckets'] = buckets
@@ -261,6 +346,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 if QMessageBox.information(self, '提示', f'最终目录的空间不足{size_to_str(k_size)}，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                     return
 
+        self.task.cmdline = cmdline
+        self.task.inner_cmdline = cmdline == self.get_builtin_exe()
         self.task.create_time = datetime.now()
         self.task.fpk = fpk
         self.task.ppk = ppk
