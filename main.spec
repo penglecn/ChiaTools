@@ -9,7 +9,6 @@ a = Analysis(['main.pyw'],
              binaries=[],
              datas=[
                  ('.\\bin\\windows\\miner\\hpool-miner-chia-console.exe', 'bin\\windows\\miner'),
-                 ('.\\bin\\windows\\plotter\\chia-plotter-windows-amd64.exe', 'bin\\windows\\plotter'),
                  ('.\\bin\\windows\\plotter\\ProofOfSpace.exe', 'bin\\windows\\plotter')
              ],
              hiddenimports=[],

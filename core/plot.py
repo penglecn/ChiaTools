@@ -15,6 +15,7 @@ from config import get_config
 from utils.lock import RWlock
 from core.disk import get_disk_usage
 import random
+from utils.chia.pos import get_plot_id_and_memo
 
 
 class PlotTask(QObject):
@@ -299,6 +300,9 @@ class PlotWorker(QThread):
         try:
             p = psutil.Process(pid=self.process.pid)
             if core.is_debug():
+                return p
+
+            if p.name().lower() == 'proofofspace.exe':
                 return p
 
             ps = p.children()
@@ -600,7 +604,7 @@ class PlotWorker(QThread):
         plat = platform.system()
         if plat == 'Windows':
             folder = 'windows'
-            bin_file = 'chia-plotter-windows-amd64.exe'
+            bin_file = 'ProofOfSpace.exe'
         elif plat == 'Darwin':
             folder = 'macos'
             bin_file = 'chia-plotter-darwin-amd64'
@@ -616,21 +620,34 @@ class PlotWorker(QThread):
         exe_cwd = os.path.join(BASE_DIR, 'bin', folder, 'plotter')
         exe = os.path.join(exe_cwd, bin_file)
 
+        # ./ProofOfSpace.exe
+        # create
+        # -i 0xa5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2
+        #-m 0xaa7c1994158b12b5062b9c351ee089fecc01f8b67d954b828aa0a5e7f638499ed051efbeb3b80e3f49f5111b2fd375a9b8de193be4ffad16ecae6d092541b2021be062a9268e2828c1fedc8fab2d46e13d0ca6c8beb29b90b7045b5888b417240baf2c890af98538238b2d3c9ee31c6eea54a2ee01ee08d126c5cf264494a3ba
+        # -k 32 -f plot-k32-2021-05-08-22-06-a5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2.plot
+        # -r 16 -u 128 -s 65536 -t N:/temporary/gmdttugmxqkq -2 N:/temporary/gmdttugmxqkq -d F:/chia-final -e false -b 7000 -p false
+
+        plot_id, plot_memo = get_plot_id_and_memo(t.fpk, t.ppk)
+        dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M")
+
+        plot_filename: str = f"plot-k{t.k}-{dt_string}-{plot_id}.plot"
+
         args = [
             exe,
-            '-action', 'plotting',
-            '-plotting-fpk', t.fpk,
-            '-plotting-ppk', t.ppk,
-            '-plotting-n', '1',
+            'create',
+            '-i', '0x' + plot_id,
+            '-m', '0x' + plot_memo,
+            '-k', f'{t.k}',
+            '-f', plot_filename,
             '-r', f'{t.number_of_thread}',
-            '-b', f'{t.memory_size}',
+            '-u', f'{t.buckets}',
+            '-s', '65536',
             '-t', t.temporary_folder,
             '-2', t.temporary_folder,
-            '-u', f'{t.buckets}',
-            '-k', f'{t.k}',
+            '-b', f'{t.memory_size}',
         ]
 
-        if t.bitfield:
+        if not t.bitfield:
             args.append('-e')
 
         while True:
