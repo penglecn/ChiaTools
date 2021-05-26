@@ -2,6 +2,18 @@
 import random
 
 
+def get_k_size(k):
+    if k == 32:
+        return 2 ** 30 * 101.4
+    elif k == 33:
+        return 2 ** 30 * 208.8
+    elif k == 34:
+        return 2 ** 30 * 429.8
+    elif k == 35:
+        return 2 ** 30 * 884.1
+    return 0
+
+
 def size_to_str(size):
     gb = size / 2 ** 30
     if gb < 1024:
