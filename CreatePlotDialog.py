@@ -4,7 +4,7 @@ from ui.CreatePlotDialog import Ui_CreatePlotDialog
 from core.plot import PlotTask, PlotSubTask
 from config import get_config, save_config
 import os
-from utils import make_name, size_to_str
+from utils import make_name, size_to_str, get_k_size
 from datetime import datetime
 import psutil
 from core import is_debug
@@ -18,6 +18,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     def __init__(self, task: PlotTask=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+
+        self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
         config = get_config()
 
@@ -82,7 +84,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.timeEditDelay.setDisabled(True)
 
             self.spinBucketNum.setValue(task.buckets)
-            # self.comboK.setCurrentText(f'{task.k}')
             select_k_combo(task.k)
             self.checkBoxBitfield.setChecked(task.bitfield)
 
@@ -144,7 +145,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 self.spinBucketNum.setValue(config['buckets'])
 
             if 'k' in config:
-                # self.comboK.setCurrentText(f"{config['k']}")
                 select_k_combo(config['k'])
 
             self.checkBoxBitfield.setChecked(True)
@@ -182,7 +182,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
         buckets = self.spinBucketNum.value()
-        # k = int(self.comboK.currentText())
         k = int(self.comboK.currentData(Qt.UserRole))
         bitfield = self.checkBoxBitfield.isChecked()
 
@@ -257,8 +256,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if hdd_folder != 'auto':
             hdd_usage = get_disk_usage(hdd_folder)
 
-            if not is_debug() and hdd_usage.free < 2**30*102:
-                if QMessageBox.information(self, '提示', '最终目录的空间不够101G，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+            k_size = get_k_size(k)
+            if not is_debug() and hdd_usage.free < k_size:
+                if QMessageBox.information(self, '提示', f'最终目录的空间不足{size_to_str(k_size)}，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                     return
 
         self.task.create_time = datetime.now()
