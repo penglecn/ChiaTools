@@ -16,6 +16,7 @@ from utils.lock import RWlock
 from core.disk import get_disk_usage
 import random
 from utils.chia.pos import get_plot_id_and_memo
+from utils import get_k_size
 
 
 class PlotTask(QObject):
@@ -49,6 +50,7 @@ class PlotTask(QObject):
         self.count = 0
         self.current_task_index = 0
         self.sub_tasks: [PlotSubTask] = []
+        self.able_to_next = True
 
         self.signalMakingPlot.connect(self.makingPlot)
 
@@ -67,13 +69,18 @@ class PlotTask(QObject):
         if self.next_stop:
             return
 
+        if task.auto_hdd_folder:
+            self.able_to_next = PlotTaskManager.choise_available_hdd_folder(task.k) != ''
+        else:
+            self.able_to_next = PlotTaskManager.is_task_able_to_next(task)
+
         if self.specify_count:
             if self.current_task_index + 1 >= self.count:
                 return
             else:
                 self.current_task_index += 1
                 self.current_sub_task.worker.start()
-        else:
+        elif self.able_to_next:
             new_sub_task = PlotSubTask(self, self.count)
             self.sub_tasks.append(new_sub_task)
 
@@ -97,6 +104,18 @@ class PlotTask(QObject):
         count = self.count - (self.current_task_index + 1)
         if count < 0:
             count = 0
+        return count
+
+    def remove_sub_task(self, sub_task):
+        self.sub_tasks.remove(sub_task)
+        self.current_task_index -= 1
+
+    @property
+    def finished_count(self):
+        count = 0
+        for sub in self.sub_tasks:
+            if sub.finish:
+                count += 1
         return count
 
     @property
@@ -660,7 +679,7 @@ class PlotWorker(QThread):
                 self.sub_task.success = False
                 self.sub_task.end_time = datetime.now()
 
-                for i in range(self.task.current_task_index + 1, self.task.count):
+                for i in range(self.task.current_task_index + 1, len(self.task.sub_tasks)):
                     rest_sub_task = self.task.sub_tasks[i]
                     rest_sub_task.success = False
                     rest_sub_task.status = '已手动停止'
@@ -681,15 +700,26 @@ class PlotWorker(QThread):
                 continue
 
             if self.task.auto_hdd_folder:
-                available_hdd_folder = PlotTaskManager.choise_available_hdd_folder(self.sub_task.k)
-                if not available_hdd_folder:
-                    self.sub_task.status = '无可用硬盘'
-                    self.sub_task.finish = True
-                    self.sub_task.success = False
+                available_hdd_folder = PlotTaskManager.choise_available_hdd_folder(self.sub_task.k, self)
+                if not self.task.able_to_next or not available_hdd_folder:
                     self.sub_task.end_time = datetime.now()
-                    self.updateTask()
+                    for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
+                        rest_sub_task = self.task.sub_tasks[i]
+                        rest_sub_task.success = False
+                        rest_sub_task.status = '无可用硬盘'
+                        rest_sub_task.finish = True
+                        self.updateTask(sub_task=rest_sub_task)
                     break
                 self.sub_task.hdd_folder = available_hdd_folder
+            elif not self.task.able_to_next:
+                self.sub_task.end_time = datetime.now()
+                for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
+                    rest_sub_task = self.task.sub_tasks[i]
+                    rest_sub_task.success = False
+                    rest_sub_task.status = '硬盘已满'
+                    rest_sub_task.finish = True
+                    self.updateTask(sub_task=rest_sub_task)
+                break
 
             args.append('-d')
             args.append(self.sub_task.hdd_folder)
@@ -752,6 +782,9 @@ class PlotWorker(QThread):
                 self.sub_task.end_time = datetime.now()
                 self.sub_task.plot_file = plot_path
 
+                if not self.task.able_to_next:
+                    self.sub_task.status += '(硬盘已满)'
+
                 self.task.signalNewPlot.emit(self.task, self.sub_task)
 
                 self.updateTask()
@@ -760,21 +793,17 @@ class PlotWorker(QThread):
             self.updateTask()
 
             if failed:
-                self.sub_task.success = False
-                self.sub_task.finish = True
                 self.sub_task.end_time = datetime.now()
-
-                for i in range(self.task.current_task_index + 1, self.task.count):
+                for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
                     rest_sub_task = self.task.sub_tasks[i]
                     rest_sub_task.success = False
                     rest_sub_task.status = self.sub_task.status
                     rest_sub_task.finish = True
                     self.updateTask(sub_task=rest_sub_task)
-
                 break
 
             if stop:
-                for i in range(self.task.current_task_index + 1, self.task.count):
+                for i in range(self.task.current_task_index + 1, len(self.task.sub_tasks)):
                     rest_sub_task = self.task.sub_tasks[i]
                     rest_sub_task.success = False
                     rest_sub_task.status = '已手动停止'
@@ -817,25 +846,36 @@ class PlotTaskManager(QObject):
         return False
 
     @staticmethod
-    def choise_available_hdd_folder(k):
+    def get_all_running_hdd_folders(except_worker=None):
         running_folders = []
         PlotTaskManager.task_lock.read_acquire()
         for task in PlotTaskManager.tasks:
             for sub in task.sub_tasks:
                 if sub.working:
+                    if except_worker and except_worker == sub.worker:
+                        continue
                     running_folders.append((sub.k, sub.hdd_folder))
         PlotTaskManager.task_lock.read_release()
+        return running_folders
 
-        def get_k_size(_k):
-            if _k == 32:
-                return 2**30*101.4
-            elif _k == 33:
-                return 2**30*208.8
-            elif _k == 34:
-                return 2**30*429.8
-            elif _k == 35:
-                return 2**30*884.1
-            return 0
+    @staticmethod
+    def is_task_able_to_next(task: PlotTask, except_worker=None):
+        running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
+
+        folder = task.hdd_folder
+        usage = get_disk_usage(folder)
+        free = usage.free
+        for running_object in running_folders:
+            running_k = running_object[0]
+            running_folder = running_object[1]
+            if running_folder == folder:
+                free -= get_k_size(running_k)
+
+        return free > get_k_size(task.k)
+
+    @staticmethod
+    def choise_available_hdd_folder(k, except_worker=None):
+        running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
 
         available_folders = []
         config = get_config()
@@ -919,9 +959,9 @@ class PlotTaskManager(QObject):
                     phase1_count += 1
 
         total_limit = 'total_limit' in config and config['total_limit']
-        total_limit_count = 'total_limit_count' in config and config['total_limit_count']
+        total_limit_count = config['total_limit_count'] if 'total_limit_count' in config else 0
         phase1_limit = 'phase1_limit' in config and config['phase1_limit']
-        phase1_limit_count = 'phase1_limit_count' in config and config['phase1_limit_count']
+        phase1_limit_count = config['phase1_limit_count'] if 'phase1_limit_count' in config else 0
 
         if total_limit and total_count >= total_limit_count:
             PlotTaskManager.task_lock.read_release()
