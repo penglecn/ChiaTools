@@ -118,6 +118,13 @@
       </spacer>
      </item>
      <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>如果要并行P图，需要创建多条任务</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="buttonCreatePlot">
        <property name="text">
         <string>创建任务</string>

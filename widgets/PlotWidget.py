@@ -61,9 +61,13 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         if 'total_limit_count' in config:
             self.spinBoxTotalCount.setValue(config['total_limit_count'])
+        else:
+            config['total_limit_count'] = 1
 
         if 'phase1_limit_count' in config:
             self.spinBoxPhase1Count.setValue(config['phase1_limit_count'])
+        else:
+            config['phase1_limit_count'] = 1
 
         if 'auto_restart_mine' in config:
             self.checkBoxAutoRestartMine.setChecked(config['auto_restart_mine'])
@@ -151,6 +155,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         action_clean_temp = None
         action_increase_number = None
         action_reduce_number = None
+        action_start_immediately = None
+        action_clear_finished = None
 
         if not sub_task_item and task.specify_count:
             action_detail.setDisabled(True)
@@ -177,6 +183,10 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     action_next_stop.setCheckable(True)
                     action_next_stop.setChecked(task.next_stop)
 
+                if not task.specify_count and task.finished_count:
+                    menu.addSeparator()
+                    action_clear_finished = menu.addAction(u"清除已完成任务")
+
             if not sub_task_item or sub_task.working:
                 menu.addSeparator()
                 if task.delay_remain():
@@ -194,6 +204,14 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     action_suspend_for_2h = menu_suspend_for.addAction(u"2小时")
                     action_suspend_for_3h = menu_suspend_for.addAction(u"3小时")
                     action_suspend_for_4h = menu_suspend_for.addAction(u"4小时")
+        else:
+            if not sub_task_item:
+                menu.addSeparator()
+                remain = task.delay_remain()
+                if remain:
+                    action_start_immediately = menu.addAction(u'立即开始')
+
+                action_delete = menu.addAction(u"删除")
 
         if os.path.exists(task.temporary_folder) and platform.system() == 'Windows':
             menu.addSeparator()
@@ -221,8 +239,22 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 QMessageBox.warning(self, '提示', '清除临时目录失败！')
                 return
 
+            if sub_task and sub_task.worker:
+                sub_task.worker.stop()
+
             self.treePlot.takeTopLevelItem(index.row())
             self.task_manager.remove_task(task)
+        elif action == action_clear_finished:
+            for sub in task.sub_tasks[:]:
+                if sub.finish:
+                    _sub_item = self.getSubItemFromSubTask(item, sub)
+                    if _sub_item:
+                        item.removeChild(_sub_item)
+                    task.remove_sub_task(sub)
+
+            # getSubItemFromSubTask
+            # for i in range(item.childCount()):
+            #     _sub_item = item.child(i)
         elif action == action_stop:
             if QMessageBox.information(self, '提示', "确定要停止任务吗？停止后无法恢复", QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                 return
@@ -314,6 +346,9 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             task.reduce()
             if task.count == 1:
                 self.removeSubTaskItem(item, task.sub_tasks[0])
+        elif action == action_start_immediately:
+            if task.delay_remain():
+                task.delay_seconds = 0
 
         if not sub_task_item:
             sub_task_item = self.getSubItemFromSubTask(item, sub_task)
@@ -429,7 +464,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
     def onMakingPlot(self, task: PlotTask, sub_task: PlotSubTask):
         if not task.specify_count:
             item = self.getItemFromTask(task)
-            self.addSubTaskItem(item, sub_task)
+            if item:
+                self.addSubTaskItem(item, sub_task)
 
     def onNewPlot(self, task: PlotTask, sub_task: PlotSubTask):
         config = get_config()
