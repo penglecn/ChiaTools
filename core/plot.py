@@ -32,6 +32,7 @@ class PlotTask(QObject):
 
         self.cmdline = ''
         self.inner_cmdline = False
+        self.official_cmdline = False
         self.fpk = ''
         self.ppk = ''
         self.k = 32
@@ -364,7 +365,19 @@ class PlotWorker(QThread):
             self.task.phase = 2
         elif text.startswith('Backpropagating on table'):
             self.table = text
+            if self.phase == 2 and self.task.official_cmdline:
+                if text == 'Backpropagating on table 6':
+                    self.sub_task.progress = 29.167
+                if text == 'Backpropagating on table 5':
+                    self.sub_task.progress = 33.333
+                if text == 'Backpropagating on table 4':
+                    self.sub_task.progress = 37.500
+                if text == 'Backpropagating on table 3':
+                    self.sub_task.progress = 41.667
+                if text == 'Backpropagating on table 2':
+                    self.sub_task.progress = 45.833
         elif text.startswith('Starting phase 3/4'):
+            self.sub_task.progress = 50.0
             self.phase = 3
             self.task.phase = 3
         elif text.startswith('Compressing tables'):
@@ -517,6 +530,12 @@ class PlotWorker(QThread):
             found = re.findall(r, text)
             if found:
                 self.plot_filename = found[0]
+        elif text.startswith('Renamed final file from'):
+            finished = True
+            r = re.compile(r'to "(.*)"')
+            found = re.findall(r, text)
+            if found:
+                self.plot_filename = os.path.basename(found[0])
         elif text.startswith('Bucket'):
             r = re.compile(r'Ram: (.*)GiB, u_sort')
             found = re.findall(r, text)
@@ -534,8 +553,6 @@ class PlotWorker(QThread):
                     failed = True
         elif text.count('Error') and text.count('Retrying'):
             self.sub_task.abnormal = True
-        elif text.startswith('Renamed final file from'):
-            finished = True
 
         try:
             self.handleProgress(text)
@@ -634,7 +651,7 @@ class PlotWorker(QThread):
             # ./ProofOfSpace.exe
             # create
             # -i 0xa5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2
-            #-m 0xaa7c1994158b12b5062b9c351ee089fecc01f8b67d954b828aa0a5e7f638499ed051efbeb3b80e3f49f5111b2fd375a9b8de193be4ffad16ecae6d092541b2021be062a9268e2828c1fedc8fab2d46e13d0ca6c8beb29b90b7045b5888b417240baf2c890af98538238b2d3c9ee31c6eea54a2ee01ee08d126c5cf264494a3ba
+            # -m 0xaa7c1994158b12b5062b9c351ee089fecc01f8b67d954b828aa0a5e7f638499ed051efbeb3b80e3f49f5111b2fd375a9b8de193be4ffad16ecae6d092541b2021be062a9268e2828c1fedc8fab2d46e13d0ca6c8beb29b90b7045b5888b417240baf2c890af98538238b2d3c9ee31c6eea54a2ee01ee08d126c5cf264494a3ba
             # -k 32 -f plot-k32-2021-05-08-22-06-a5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2.plot
             # -r 16 -u 128 -s 65536 -t N:/temporary/gmdttugmxqkq -2 N:/temporary/gmdttugmxqkq -d F:/chia-final -e false -b 7000 -p false
 
@@ -651,6 +668,7 @@ class PlotWorker(QThread):
                 '-t', t.temporary_folder,
                 '-2', t.temporary_folder,
                 '-b', f'{t.memory_size}',
+                '-p',
             ]
         else:
             fpk = t.fpk
@@ -882,6 +900,8 @@ class PlotTaskManager(QObject):
 
         folder = task.hdd_folder
         usage = get_disk_usage(folder)
+        if usage is None:
+            return False
         free = usage.free
         for running_object in running_folders:
             running_k = running_object[0]
@@ -902,6 +922,8 @@ class PlotTaskManager(QObject):
             if not os.path.exists(folder):
                 continue
             usage = get_disk_usage(folder)
+            if usage is None:
+                continue
             free = usage.free
             for running_object in running_folders:
                 running_k = running_object[0]

@@ -6,7 +6,6 @@ from config import get_config, save_config
 import os
 from utils import make_name, size_to_str, get_k_size
 from datetime import datetime
-import psutil
 from core.disk import get_disk_usage
 from PyQt5.QtWidgets import QFileDialog
 from core import BASE_DIR, is_debug
@@ -188,6 +187,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         else:
             return ''
         exe_cwd = os.path.join(BASE_DIR, 'bin', folder, 'plotter')
+        if is_debug():
+            return os.path.join(exe_cwd, 'test.exe')
         return os.path.join(exe_cwd, 'ProofOfSpace.exe')
 
     def changeCmdLine(self):
@@ -256,6 +257,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.task.bitfield = bitfield
             self.task.cmdline = cmdline
             self.task.inner_cmdline = cmdline == self.get_builtin_exe()
+            self.task.official_cmdline = cmdline == self.get_official_chia_exe()
             super().accept()
             return
         fpk = self.editFpk.toPlainText()
@@ -341,6 +343,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if hdd_folder != 'auto':
             hdd_usage = get_disk_usage(hdd_folder)
 
+            if hdd_usage is None:
+                QMessageBox.information(self, '提示', f'目录{hdd_folder}无法使用')
+                return
+
             k_size = get_k_size(k)
             if not is_debug() and hdd_usage.free < k_size:
                 if QMessageBox.information(self, '提示', f'最终目录的空间不足{size_to_str(k_size)}，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
@@ -348,6 +354,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.task.cmdline = cmdline
         self.task.inner_cmdline = cmdline == self.get_builtin_exe()
+        self.task.official_cmdline = cmdline == self.get_official_chia_exe()
         self.task.create_time = datetime.now()
         self.task.fpk = fpk
         self.task.ppk = ppk

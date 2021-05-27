@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_CreatePlotDialog(object):
     def setupUi(self, CreatePlotDialog):
         CreatePlotDialog.setObjectName("CreatePlotDialog")
-        CreatePlotDialog.resize(513, 506)
+        CreatePlotDialog.resize(513, 538)
         self.verticalLayout = QtWidgets.QVBoxLayout(CreatePlotDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.formLayout = QtWidgets.QFormLayout()
@@ -80,8 +80,8 @@ class Ui_CreatePlotDialog(object):
         self.label_4.setObjectName("label_4")
         self.formLayout.setWidget(11, QtWidgets.QFormLayout.LabelRole, self.label_4)
         self.spinBucketNum = QtWidgets.QSpinBox(CreatePlotDialog)
-        self.spinBucketNum.setMinimum(1)
-        self.spinBucketNum.setMaximum(9999)
+        self.spinBucketNum.setMinimum(16)
+        self.spinBucketNum.setMaximum(128)
         self.spinBucketNum.setProperty("value", 128)
         self.spinBucketNum.setObjectName("spinBucketNum")
         self.formLayout.setWidget(11, QtWidgets.QFormLayout.FieldRole, self.spinBucketNum)
@@ -121,6 +121,20 @@ class Ui_CreatePlotDialog(object):
         self.buttonBox.accepted.connect(CreatePlotDialog.accept)
         self.buttonBox.rejected.connect(CreatePlotDialog.reject)
         QtCore.QMetaObject.connectSlotsByName(CreatePlotDialog)
+        CreatePlotDialog.setTabOrder(self.comboCmdLine, self.lineEditCmdLine)
+        CreatePlotDialog.setTabOrder(self.lineEditCmdLine, self.comboSSD)
+        CreatePlotDialog.setTabOrder(self.comboSSD, self.comboHDD)
+        CreatePlotDialog.setTabOrder(self.comboHDD, self.editFpk)
+        CreatePlotDialog.setTabOrder(self.editFpk, self.editPpk)
+        CreatePlotDialog.setTabOrder(self.editPpk, self.comboK)
+        CreatePlotDialog.setTabOrder(self.comboK, self.spinMemory)
+        CreatePlotDialog.setTabOrder(self.spinMemory, self.spinThreadNum)
+        CreatePlotDialog.setTabOrder(self.spinThreadNum, self.spinBucketNum)
+        CreatePlotDialog.setTabOrder(self.spinBucketNum, self.checkBoxBitfield)
+        CreatePlotDialog.setTabOrder(self.checkBoxBitfield, self.checkBoxSpecifyCount)
+        CreatePlotDialog.setTabOrder(self.checkBoxSpecifyCount, self.spinNumber)
+        CreatePlotDialog.setTabOrder(self.spinNumber, self.timeEditDelay)
+        CreatePlotDialog.setTabOrder(self.timeEditDelay, self.commandLinkButton)
 
     def retranslateUi(self, CreatePlotDialog):
         _translate = QtCore.QCoreApplication.translate

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>513</width>
-    <height>506</height>
+    <height>538</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -144,10 +144,10 @@
      <item row="11" column="1">
       <widget class="QSpinBox" name="spinBucketNum">
        <property name="minimum">
-        <number>1</number>
+        <number>16</number>
        </property>
        <property name="maximum">
-        <number>9999</number>
+        <number>128</number>
        </property>
        <property name="value">
         <number>128</number>
@@ -216,6 +216,23 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>comboCmdLine</tabstop>
+  <tabstop>lineEditCmdLine</tabstop>
+  <tabstop>comboSSD</tabstop>
+  <tabstop>comboHDD</tabstop>
+  <tabstop>editFpk</tabstop>
+  <tabstop>editPpk</tabstop>
+  <tabstop>comboK</tabstop>
+  <tabstop>spinMemory</tabstop>
+  <tabstop>spinThreadNum</tabstop>
+  <tabstop>spinBucketNum</tabstop>
+  <tabstop>checkBoxBitfield</tabstop>
+  <tabstop>checkBoxSpecifyCount</tabstop>
+  <tabstop>spinNumber</tabstop>
+  <tabstop>timeEditDelay</tabstop>
+  <tabstop>commandLinkButton</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

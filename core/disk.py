@@ -21,8 +21,11 @@ def get_disk_usage(folder):
     __disk_cache_lock.read_acquire()
     if folder not in __disk_usage_cache:
         __disk_cache_lock.read_release()
-        usage = psutil.disk_usage(folder)
-        set_disk_usage(folder, usage)
+        try:
+            usage = psutil.disk_usage(folder)
+            set_disk_usage(folder, usage)
+        except:
+            return None
     else:
         usage = __disk_usage_cache[folder]
         __disk_cache_lock.read_release()
