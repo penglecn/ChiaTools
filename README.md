@@ -24,19 +24,19 @@ https://gitee.com/devteamcn/chia-tools/releases
 - P图命令行可自由选择，选择内置P图程序，或官方钱包命令行
 ## 软件界面
 ### 硬盘
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/folder01.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/folder01.jpg)
 ### P图任务
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot01.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot01.jpg)
 ### 创建P图任务
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create01.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create01.jpg)
 ### 矿池挖矿
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/mine01.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/mine01.jpg)
 
 # 使用说明
 ## 配置硬盘
 首先要配置硬盘，在硬盘界面里，将所有的固态硬盘和机械硬盘分别添加到对应的列表中。
 ## 创建P图任务
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create02.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create02.jpg)
 
 ### P图程序
 P图命令行分为两种，一种是官方钱包chia.exe，一种是内置的ProofOfSpace.exe
@@ -75,11 +75,11 @@ ProofOfSpace.exe是chia官方提供的开源代码编译出来的P图程序，�
 如果你想让同一个固态硬盘下的多个任务错开高峰，可以自定义延迟时间来运行任务。
 ## P图任务管理
 右键一个正在执行的P图任务，会弹出下面菜单。
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/menu01.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/menu01.jpg)
 ### 查看日志
 查看日志可以查看任务输出的实时日志内容。
 ### 编辑
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/edit01.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/edit01.jpg)
 编辑任务可以在任务运行过程中修改配置，修改之后会在下个任务执行时生效。
 ### 停止
 会强制停止正在运行的任务，注意停止后无法恢复。
@@ -91,7 +91,7 @@ ProofOfSpace.exe是chia官方提供的开源代码编译出来的P图程序，�
 点击后会跳转到该任务的临时文件所在的目录。
 ## P图任务辅助功能
 在P图任务界面的下方，会有任务数量的限制。
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot02.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot02.jpg)
 ### 限制阶段1的任务数量
 当创建了多个P图任务，此时只会有指定数量的任务处于阶段1执行，其它任务会处于排队中的状态。
 ### 限制总任务数量
@@ -116,12 +116,12 @@ ProofOfSpace.exe是chia官方提供的开源代码编译出来的P图程序，�
 
 # 创建任务实战
 ## 创建并发任务，一直运行直到P满所有硬盘
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create03.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create03.jpg)
 最终目录选择自动，不指定数量。
 
 使用以上配置，创建多条任务，即可实现多任务并发。
 ## 在指定硬盘中P指定数量的图
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create04.png)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create04.jpg)
 最终目录中选择目标硬盘。
 
 如果要单任务按顺序P图，输入指定的数量即可。
