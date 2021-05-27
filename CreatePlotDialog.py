@@ -10,6 +10,8 @@ from core.disk import get_disk_usage
 from PyQt5.QtWidgets import QFileDialog
 from core import BASE_DIR, is_debug
 import platform
+import re
+from subprocess import Popen, PIPE, CREATE_NO_WINDOW
 
 
 class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
@@ -143,11 +145,19 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 self.comboHDD.addItem(text, folder)
             self.comboHDD.setCurrentIndex(current_index)
 
+            fpk = ''
+            ppk = ''
             if 'fpk' in config:
-                self.editFpk.setPlainText(config['fpk'])
+                fpk = config['fpk']
 
             if 'ppk' in config:
-                self.editPpk.setPlainText(config['ppk'])
+                ppk = config['ppk']
+
+            if not fpk and not ppk and chia_exe:
+                fpk, ppk = self.get_fpk_ppk(chia_exe)
+
+            self.editFpk.setPlainText(fpk)
+            self.editPpk.setPlainText(ppk)
 
             if 'num' in config:
                 self.spinNumber.setValue(config['num'])
@@ -200,6 +210,40 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.lineEditCmdLine.setText(data)
 
     @staticmethod
+    def get_fpk_ppk(chia_exe):
+        args = [
+            chia_exe,
+            'keys',
+            'show',
+        ]
+        process = Popen(args, stdout=PIPE, stderr=PIPE, cwd=os.path.dirname(chia_exe), creationflags=CREATE_NO_WINDOW)
+
+        fpk = ''
+        ppk = ''
+
+        while True:
+            line = process.stdout.readline()
+
+            text = line.decode('utf-8', errors='replace')
+            if not text and process.poll() is not None:
+                break
+
+            text = text.rstrip()
+
+            if text.startswith('Farmer public key'):
+                r = re.compile(r': (.*)')
+                found = re.findall(r, text)
+                if found:
+                    fpk = found[0]
+            elif text.startswith('Pool public key'):
+                r = re.compile(r': (.*)')
+                found = re.findall(r, text)
+                if found:
+                    ppk = found[0]
+
+        return fpk, ppk
+
+    @staticmethod
     def get_official_chia_exe():
         app_data = os.getenv('LOCALAPPDATA')
         if app_data is None:
@@ -225,7 +269,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         return chia_exe
 
     def aboutPublicKey(self):
-        QMessageBox.information(self, '提示', '该软件不会向用户索要助记词，但fpk和ppk需要使用助记词来获取。请使用第三方工具（如：HPool提供的签名软件等）来生成。')
+        QMessageBox.information(self, '提示', '该软件不会向用户索要助记词。\n如果你已经安装了Chia官方钱包软件并且创建了钱包，fpk和ppk会自动获取。如果没有安装，请使用第三方工具（如：HPool提供的签名软件等）来生成。')
 
     def checkSpecifyCount(self):
         self.spinNumber.setDisabled(not self.checkBoxSpecifyCount.isChecked())
@@ -301,15 +345,15 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             QMessageBox.information(self, '提示', '请输入ppk')
             return
 
-        if not fpk.startswith('0x'):
-            fpk = '0x' + fpk
-        if not ppk.startswith('0x'):
-            ppk = '0x' + ppk
+        if fpk.startswith('0x'):
+            fpk = fpk[2:]
+        if ppk.startswith('0x'):
+            ppk = ppk[2:]
 
-        if len(fpk) != 98:
+        if len(fpk) != 96:
             QMessageBox.information(self, '提示', 'fpk格式错误，请检查')
             return
-        if len(ppk) != 98:
+        if len(ppk) != 96:
             QMessageBox.information(self, '提示', 'ppk格式错误，请检查')
             return
 
