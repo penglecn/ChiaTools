@@ -186,6 +186,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if 'cmdline' in config:
                 select_cmdline(config['cmdline'])
 
+        self.checkBoxBitfield.stateChanged.connect(self.checkBitfield)
+
     def get_builtin_exe(self):
         plat = platform.system()
         if plat == 'Windows':
@@ -270,6 +272,12 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
     def aboutPublicKey(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词。\n如果你已经安装了Chia官方钱包软件并且创建了钱包，fpk和ppk会自动获取。如果没有安装，请使用第三方工具（如：HPool提供的签名软件等）来生成。')
+
+    def checkBitfield(self, value):
+        if value == 0:
+            if QMessageBox.information(self, '提示', f'禁止位域会导致P图过程效率低且临时文件大，确定要禁止吗？',
+                                       QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                self.checkBoxBitfield.setCheckState(2)
 
     def checkSpecifyCount(self):
         self.spinNumber.setDisabled(not self.checkBoxSpecifyCount.isChecked())
