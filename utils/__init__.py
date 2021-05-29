@@ -1,5 +1,9 @@
 # coding: utf-8
 import random
+import winreg
+from core import BASE_DIR
+import platform
+import os
 
 
 def get_k_size(k):
@@ -62,3 +66,43 @@ def make_name(length):
         s += random.choice(ss)
 
     return s
+
+
+def setup_auto_launch(onoff):
+    if platform.system() != 'Windows':
+        return
+    exe_file = os.path.join(BASE_DIR, 'ChiaTools.exe')
+
+    if not os.path.exists(exe_file):
+        return
+
+    try:
+        key = winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Run', 0, winreg.KEY_WRITE)
+
+        if onoff:
+            winreg.SetValueEx(key, "ChiaTools", None, winreg.REG_SZ, exe_file)
+        else:
+            try:
+                winreg.DeleteValue(key, "ChiaTools")
+            except FileNotFoundError:
+                pass
+        winreg.CloseKey(key)
+    except:
+        pass
+
+
+def is_auto_launch():
+    if platform.system() != 'Windows':
+        return True
+
+    exe_file = os.path.join(BASE_DIR, 'ChiaTools.exe')
+
+    try:
+        key = winreg.OpenKeyEx(winreg.HKEY_CURRENT_USER, r'SOFTWARE\Microsoft\Windows\CurrentVersion\Run', 0, winreg.KEY_READ)
+        val = winreg.QueryValueEx(key, "ChiaTools")[0]
+        ret = val == exe_file
+        winreg.CloseKey(key)
+    except FileNotFoundError:
+        ret = False
+
+    return ret

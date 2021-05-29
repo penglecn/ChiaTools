@@ -64,4 +64,4 @@ class Ui_MineWidget(object):
         self.label.setText(_translate("MineWidget", "API Key"))
         self.labelStatus.setText(_translate("MineWidget", "状态"))
         self.buttonStart.setText(_translate("MineWidget", "开始挖矿"))
-        self.checkBoxAutoStart.setText(_translate("MineWidget", "自动开始挖矿"))
+        self.checkBoxAutoStart.setText(_translate("MineWidget", "开机自动启动并开始挖矿"))

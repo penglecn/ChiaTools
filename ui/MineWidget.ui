@@ -86,7 +86,7 @@
      <item>
       <widget class="QCheckBox" name="checkBoxAutoStart">
        <property name="text">
-        <string>自动开始挖矿</string>
+        <string>开机自动启动并开始挖矿</string>
        </property>
       </widget>
      </item>

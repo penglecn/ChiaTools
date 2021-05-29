@@ -13,6 +13,7 @@ import threading
 import platform
 import time
 from core.disk import DiskOperation
+from utils import is_auto_launch, setup_auto_launch
 
 
 class MineWidget(QWidget, Ui_MineWidget):
@@ -63,7 +64,17 @@ class MineWidget(QWidget, Ui_MineWidget):
 
         config = get_config()
 
-        if 'auto_mine' in config and config['auto_mine']:
+        if 'auto_mine' in config:
+            auto_mine = config['auto_mine']
+            del config['auto_mine']
+            save_config()
+
+            setup_auto_launch(auto_mine)
+            auto_start = auto_mine
+        else:
+            auto_start = is_auto_launch()
+
+        if auto_start:
             self.checkBoxAutoStart.setChecked(True)
             self.startMine()
 
@@ -202,9 +213,8 @@ class MineWidget(QWidget, Ui_MineWidget):
         self.mine_process.terminate()
 
     def checkAutoStart(self, i):
-        config = get_config()
-        config['auto_mine'] = self.checkBoxAutoStart.isChecked()
-        save_config()
+        auto_start = self.checkBoxAutoStart.isChecked()
+        setup_auto_launch(auto_start)
 
     def clickStartMine(self):
         if not self.mine_process:
@@ -216,8 +226,6 @@ class MineWidget(QWidget, Ui_MineWidget):
         if self.mine_process:
             self.mine_terminating = True
             self.mine_process.terminate()
-            self.mine_process.wait()
-            self.mine_process = None
             return
 
         config = get_config()
@@ -235,6 +243,10 @@ class MineWidget(QWidget, Ui_MineWidget):
 
         if not apikey:
             self.editApiKey.setFocus()
+            return
+
+        if len(apikey) != 36:
+            QMessageBox.information(self, '提示', 'API Key长度是36，请检查')
             return
 
         if not self.generateMineConfig():
