@@ -363,9 +363,9 @@ class PlotWorker(QThread):
         elif self.phase == 2:
             if self.sub_task.bitfield:
                 return False
-            return buckets == 128
+            return buckets == 128 or buckets == 64
         elif self.phase == 3:
-            return buckets == 128
+            return buckets == 128 or buckets == 64
         elif self.phase == 4:
             return True
 
@@ -442,7 +442,7 @@ class PlotWorker(QThread):
                 else:
                     return
             elif self.phase == 2:
-                if self.sub_task.buckets != 128:
+                if self.sub_task.bitfield:
                     return
                 if self.table == 'Backpropagating on table 6':
                     base_progress = 29.167
@@ -467,44 +467,73 @@ class PlotWorker(QThread):
                 else:
                     return
             elif self.phase == 3:
-                if self.sub_task.buckets != 128:
+                if self.sub_task.buckets not in (128, 64):
                     return
                 if self.table == 'Compressing tables 1 and 2':
                     base_progress = 50.000
                     max_progress = 54.167
-                    total_bucket = 102 + self.sub_task.buckets
+                    base_bucket1 = 102
+                    base_bucket2 = 0
+                    if self.sub_task.buckets == 64:
+                        base_bucket1 = 51
+                    total_bucket = base_bucket1 + self.sub_task.buckets
                     if not self.phase3_first_computation:
-                        self.bucket = 102 + 1 + self.bucket
+                        self.bucket = base_bucket1 + 1 + self.bucket
                 elif self.table == 'Compressing tables 2 and 3':
                     base_progress = 54.167
                     max_progress = 58.333
-                    total_bucket = 102 + 81 + 1
+                    base_bucket1 = 102
+                    base_bucket2 = 81
+                    if self.sub_task.buckets == 64:
+                        base_bucket1 = 51
+                        base_bucket2 = 40
+                    total_bucket = base_bucket1 + base_bucket2 + 1
                     if not self.phase3_first_computation:
-                        self.bucket = 102 + 1 + self.bucket
+                        self.bucket = base_bucket1 + 1 + self.bucket
                 elif self.table == 'Compressing tables 3 and 4':
                     base_progress = 58.333
                     max_progress = 62.500
-                    total_bucket = 102 + 82 + 1
+                    base_bucket1 = 102
+                    base_bucket2 = 82
+                    if self.sub_task.buckets == 64:
+                        base_bucket1 = 51
+                        base_bucket2 = 41
+                    total_bucket = base_bucket1 + base_bucket2 + 1
                     if not self.phase3_first_computation:
-                        self.bucket = 102 + 1 + self.bucket
+                        self.bucket = base_bucket1 + 1 + self.bucket
                 elif self.table == 'Compressing tables 4 and 5':
                     base_progress = 62.500
                     max_progress = 66.667
-                    total_bucket = 103 + 83 + 1
+                    base_bucket1 = 103
+                    base_bucket2 = 83
+                    if self.sub_task.buckets == 64:
+                        base_bucket1 = 51
+                        base_bucket2 = 41
+                    total_bucket = base_bucket1 + base_bucket2 + 1
                     if not self.phase3_first_computation:
-                        self.bucket = 103 + 1 + self.bucket
+                        self.bucket = base_bucket1 + 1 + self.bucket
                 elif self.table == 'Compressing tables 5 and 6':
                     base_progress = 66.667
                     max_progress = 70.833
-                    total_bucket = 105 + 86 + 1
+                    base_bucket1 = 105
+                    base_bucket2 = 86
+                    if self.sub_task.buckets == 64:
+                        base_bucket1 = 52
+                        base_bucket2 = 43
+                    total_bucket = base_bucket1 + base_bucket2 + 1
                     if not self.phase3_first_computation:
-                        self.bucket = 105 + 1 + self.bucket
+                        self.bucket = base_bucket1 + 1 + self.bucket
                 elif self.table == 'Compressing tables 6 and 7':
                     base_progress = 70.833
                     max_progress = 75.000
-                    total_bucket = 110 + 95 + 1
+                    base_bucket1 = 110
+                    base_bucket2 = 95
+                    if self.sub_task.buckets == 64:
+                        base_bucket1 = 55
+                        base_bucket2 = 47
+                    total_bucket = base_bucket1 + base_bucket2 + 1
                     if not self.phase3_first_computation:
-                        self.bucket = 110 + 1 + self.bucket
+                        self.bucket = base_bucket1 + 1 + self.bucket
                 else:
                     return
             elif self.phase == 4:
