@@ -53,9 +53,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                     self.comboCmdLine.setCurrentIndex(i)
                     return
 
-            self.comboCmdLine.addItem(os.path.basename(cmdline), cmdline)
-            self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
-            self.lineEditCmdLine.setText(cmdline)
+            if task:
+                self.comboCmdLine.addItem(os.path.basename(cmdline), cmdline)
+                self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
+                self.lineEditCmdLine.setText(cmdline)
 
         def select_k_combo(k):
             for i in range(self.comboK.count()):
