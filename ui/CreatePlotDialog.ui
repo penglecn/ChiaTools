@@ -187,7 +187,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label_10">
        <property name="text">
-        <string>P图程序</string>
+        <string>P图命令行程序</string>
        </property>
       </widget>
      </item>

@@ -38,12 +38,15 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboK.setCurrentIndex(0)
 
         self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
+        self.comboCmdLine.setCurrentIndex(0)
+
         chia_exe = self.get_official_chia_exe()
         if chia_exe:
             self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
+            self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
+
         self.comboCmdLine.addItem('手动选择', 'select')
         self.comboCmdLine.currentIndexChanged.connect(self.changeCmdLine)
-        self.comboCmdLine.setCurrentIndex(0)
         self.changeCmdLine()
 
         def select_cmdline(cmdline):
