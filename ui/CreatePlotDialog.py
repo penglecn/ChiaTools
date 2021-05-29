@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_CreatePlotDialog(object):
     def setupUi(self, CreatePlotDialog):
         CreatePlotDialog.setObjectName("CreatePlotDialog")
-        CreatePlotDialog.resize(513, 538)
+        CreatePlotDialog.resize(499, 558)
         self.verticalLayout = QtWidgets.QVBoxLayout(CreatePlotDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.formLayout = QtWidgets.QFormLayout()
@@ -113,6 +113,11 @@ class Ui_CreatePlotDialog(object):
         self.commandLinkButton = QtWidgets.QCommandLinkButton(CreatePlotDialog)
         self.commandLinkButton.setObjectName("commandLinkButton")
         self.verticalLayout.addWidget(self.commandLinkButton)
+        self.labelTip = QtWidgets.QLabel(CreatePlotDialog)
+        self.labelTip.setText("")
+        self.labelTip.setWordWrap(True)
+        self.labelTip.setObjectName("labelTip")
+        self.verticalLayout.addWidget(self.labelTip)
         self.buttonBox = QtWidgets.QDialogButtonBox(CreatePlotDialog)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
@@ -155,5 +160,5 @@ class Ui_CreatePlotDialog(object):
         self.label_8.setText(_translate("CreatePlotDialog", "Plot大小(K)"))
         self.label_9.setText(_translate("CreatePlotDialog", "开启位域(bitfield)"))
         self.checkBoxBitfield.setText(_translate("CreatePlotDialog", "开启"))
-        self.label_10.setText(_translate("CreatePlotDialog", "P图程序"))
+        self.label_10.setText(_translate("CreatePlotDialog", "P图命令行程序"))
         self.commandLinkButton.setText(_translate("CreatePlotDialog", "关于fpk和ppk"))

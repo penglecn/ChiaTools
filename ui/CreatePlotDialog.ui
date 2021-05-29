@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>513</width>
-    <height>538</height>
+    <width>499</width>
+    <height>558</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -207,6 +207,16 @@
     <widget class="QCommandLinkButton" name="commandLinkButton">
      <property name="text">
       <string>关于fpk和ppk</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="labelTip">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

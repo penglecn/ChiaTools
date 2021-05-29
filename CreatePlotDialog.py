@@ -30,6 +30,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.buttonBox.button(self.buttonBox.Cancel).setText('取消')
         self.checkBoxSpecifyCount.stateChanged.connect(self.checkSpecifyCount)
         self.commandLinkButton.clicked.connect(self.aboutPublicKey)
+        self.spinNumber.valueChanged.connect(self.update_tip_text)
+        self.comboSSD.currentIndexChanged.connect(self.update_tip_text)
+        self.comboHDD.currentIndexChanged.connect(self.update_tip_text)
 
         self.comboK.addItem('101.4GiB (k=32, 临时文件: 239GiB)', 32)
         self.comboK.addItem('208.8GiB (k=33, 临时文件: 521GiB)', 33)
@@ -192,6 +195,30 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.checkBoxBitfield.stateChanged.connect(self.checkBitfield)
 
+        self.update_tip_text()
+
+    def update_tip_text(self):
+        ssd_folder = self.comboSSD.currentData(Qt.UserRole)
+        hdd_folder = self.comboHDD.currentData(Qt.UserRole)
+        num = self.spinNumber.value()
+
+        text = f'创建一条并发任务，使用固态硬盘{ssd_folder}作为临时目录，'
+        if hdd_folder == 'auto':
+            text += '向所有可用机械硬盘'
+        else:
+            text += f'向硬盘{hdd_folder} '
+
+        if self.checkBoxSpecifyCount.isChecked():
+            text += f'P{num}张图'
+        else:
+            text += f'P图，直到'
+            if hdd_folder == 'auto':
+                text += '所有硬盘填满为止'
+            else:
+                text += '硬盘填满为止'
+
+        self.labelTip.setText(text)
+
     def get_builtin_exe(self):
         plat = platform.system()
         if plat == 'Windows':
@@ -285,6 +312,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
     def checkSpecifyCount(self):
         self.spinNumber.setDisabled(not self.checkBoxSpecifyCount.isChecked())
+
+        self.update_tip_text()
 
     def accept(self) -> None:
         if self.modify:
