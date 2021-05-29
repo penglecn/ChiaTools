@@ -137,6 +137,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             sub_task: PlotSubTask = task.current_sub_task
             working = task.working
 
+        root_item = sub_task_item is None
+
         menu = QMenu(self)
 
         action_detail = menu.addAction(u"查看日志")
@@ -158,18 +160,18 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         action_start_immediately = None
         action_clear_finished = None
 
-        if not sub_task_item and task.specify_count:
+        if root_item and (task.specify_count and task.count > 1):
             action_detail.setDisabled(True)
 
         if task.finish:
-            if not sub_task_item:
+            if root_item:
                 menu.addSeparator()
                 action_delete = menu.addAction(u"删除")
                 if not task.success:
                     if os.path.exists(task.temporary_folder):
                         action_clean_temp = menu.addAction(u"清除临时文件")
         elif working:
-            if not sub_task_item:
+            if root_item:
                 menu.addSeparator()
                 action_modify = menu.addAction(u"编辑")
                 menu.addSeparator()
@@ -187,7 +189,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     menu.addSeparator()
                     action_clear_finished = menu.addAction(u"清除已完成任务")
 
-            if not sub_task_item or sub_task.working:
+            if root_item or sub_task.working:
                 menu.addSeparator()
                 if task.delay_remain():
                     action_stop = menu.addAction(u"取消")
@@ -205,7 +207,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     action_suspend_for_3h = menu_suspend_for.addAction(u"3小时")
                     action_suspend_for_4h = menu_suspend_for.addAction(u"4小时")
         else:
-            if not sub_task_item:
+            if root_item:
                 menu.addSeparator()
                 remain = task.delay_remain()
                 if remain:
@@ -230,7 +232,11 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 return
             self.task_manager.save_tasks()
         elif action == action_delete:
-            all_files, total_size = task.get_temp_files()
+            all_files, total_size, have_temp_plot = task.get_temp_files()
+
+            if have_temp_plot:
+                QMessageBox.information(self, '提示', f"检测到临时目录下存在未完成移动的plot文件(.plot.2.tmp)，请手动把该文件改名为.plot后移动到最终目录。")
+                return
 
             if len(all_files):
                 if QMessageBox.information(self, '提示', f"确定要删除临时目录吗？\n{len(all_files)}个文件\n{size_to_str(total_size)}GB", QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
@@ -324,7 +330,11 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             folder = task.temporary_folder.replace('/', '\\')
             run('explorer /select, ' + folder)
         elif action == action_clean_temp:
-            all_files, total_size = task.get_temp_files()
+            all_files, total_size, have_temp_plot = task.get_temp_files()
+
+            if have_temp_plot:
+                QMessageBox.information(self, '提示', f"检测到临时目录下存在未完成移动的plot文件(.plot.2.tmp)，请手动把该文件改名为.plot后移动到最终目录。")
+                return
 
             if len(all_files) == 0:
                 QMessageBox.information(self, '提示', '没有临时文件')
