@@ -314,6 +314,19 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.task.cmdline = cmdline
             self.task.inner_cmdline = cmdline == self.get_builtin_exe()
             self.task.official_cmdline = cmdline == self.get_official_chia_exe()
+
+            if self.task.specify_count:
+                for sub in self.task.sub_tasks:
+                    if not sub.finish and not sub.working:
+                        if hdd_folder == 'auto':
+                            sub.hdd_folder = ''
+                        else:
+                            sub.hdd_folder = hdd_folder
+
+                        sub.buckets = buckets
+                        sub.k = k
+                        sub.bitfield = bitfield
+
             super().accept()
             return
         fpk = self.editFpk.toPlainText()

@@ -231,6 +231,11 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             if dlg.exec() == dlg.rejected:
                 return
             self.task_manager.save_tasks()
+            self.updateTaskItem(item, task)
+            for sub in task.sub_tasks:
+                _sub_item = self.getSubItemFromSubTask(item, sub)
+                if _sub_item:
+                    self.updateSubTaskItem(_sub_item, sub)
         elif action == action_delete:
             all_files, total_size, temp_plot_size = task.get_temp_files()
 
