@@ -232,11 +232,11 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 return
             self.task_manager.save_tasks()
         elif action == action_delete:
-            all_files, total_size, have_temp_plot = task.get_temp_files()
+            all_files, total_size, temp_plot_size = task.get_temp_files()
 
-            if have_temp_plot:
-                QMessageBox.information(self, '提示', f"检测到临时目录下存在未完成移动的plot文件(.plot.2.tmp)，请手动把该文件改名为.plot后移动到最终目录。")
-                return
+            if temp_plot_size:
+                if QMessageBox.information(self, '提示', f"检测到临时目录下存在未完成移动的plot文件(.plot.2.tmp)，大小{size_to_str(temp_plot_size)}，建议手动把该文件改名为.plot后移动到最终目录。\n\n确定要删除吗？", QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                    return
 
             if len(all_files):
                 if QMessageBox.information(self, '提示', f"确定要删除临时目录吗？\n{len(all_files)}个文件\n{size_to_str(total_size)}GB", QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
@@ -330,11 +330,11 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             folder = task.temporary_folder.replace('/', '\\')
             run('explorer /select, ' + folder)
         elif action == action_clean_temp:
-            all_files, total_size, have_temp_plot = task.get_temp_files()
+            all_files, total_size, temp_plot_size = task.get_temp_files()
 
-            if have_temp_plot:
-                QMessageBox.information(self, '提示', f"检测到临时目录下存在未完成移动的plot文件(.plot.2.tmp)，请手动把该文件改名为.plot后移动到最终目录。")
-                return
+            if temp_plot_size:
+                if QMessageBox.information(self, '提示', f"检测到临时目录下存在未完成移动的plot文件(.plot.2.tmp)，大小{size_to_str(temp_plot_size)}，建议手动把该文件改名为.plot后移动到最终目录。\n\n确定要删除吗？", QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                    return
 
             if len(all_files) == 0:
                 QMessageBox.information(self, '提示', '没有临时文件')

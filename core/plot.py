@@ -204,25 +204,39 @@ class PlotTask(QObject):
             return 0
         return int(remain)
 
-    def get_temp_files(self):
-        all_files = []
-        total_size = 0
-        have_temp_plot = False
+    def get_temp_plot_size(self):
         try:
             for file in os.listdir(self.temporary_folder):
                 full = os.path.join(self.temporary_folder, file)
                 if not os.path.isfile(full):
                     continue
                 if full.endswith('.plot.2.tmp'):
-                    have_temp_plot = True
+                    return os.path.getsize(full)
+        except:
+            pass
+        return 0
+
+    def get_temp_files(self):
+        all_files = []
+        total_size = 0
+        temp_plot_size = 0
+        try:
+            for file in os.listdir(self.temporary_folder):
+                full = os.path.join(self.temporary_folder, file)
+                if not os.path.isfile(full):
+                    continue
+                if full.endswith('.plot.2.tmp'):
+                    size = os.path.getsize(full)
+                    if size > 2 ** 30 * 100:
+                        temp_plot_size = size
                 total_size += os.path.getsize(full)
                 all_files.append(full)
         except:
             pass
-        return all_files, total_size, have_temp_plot
+        return all_files, total_size, temp_plot_size
 
     def delete_temp_files(self):
-        all_files, total_size, have_temp_plot = self.get_temp_files()
+        all_files, total_size, temp_plot_size = self.get_temp_files()
         try:
             for file in all_files:
                 os.remove(file)
