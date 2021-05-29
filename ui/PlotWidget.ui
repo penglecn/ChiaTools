@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>839</width>
-    <height>507</height>
+    <width>903</width>
+    <height>533</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -100,7 +100,7 @@
      <item>
       <widget class="QCheckBox" name="checkBoxAutoRestartMine">
        <property name="text">
-        <string>完成后自动重新挖矿</string>
+        <string>完成后自动重启HPool挖矿</string>
        </property>
       </widget>
      </item>

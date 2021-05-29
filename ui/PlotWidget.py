@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_PlotWidget(object):
     def setupUi(self, PlotWidget):
         PlotWidget.setObjectName("PlotWidget")
-        PlotWidget.resize(839, 507)
+        PlotWidget.resize(903, 533)
         self.verticalLayout = QtWidgets.QVBoxLayout(PlotWidget)
         self.verticalLayout.setObjectName("verticalLayout")
         self.treePlot = QtWidgets.QTreeWidget(PlotWidget)
@@ -68,6 +68,6 @@ class Ui_PlotWidget(object):
         self.spinBoxPhase1Count.setSuffix(_translate("PlotWidget", "个"))
         self.checkBoxTotalLimit.setText(_translate("PlotWidget", "限制总任务数量"))
         self.spinBoxTotalCount.setSuffix(_translate("PlotWidget", "个"))
-        self.checkBoxAutoRestartMine.setText(_translate("PlotWidget", "完成后自动重新挖矿"))
+        self.checkBoxAutoRestartMine.setText(_translate("PlotWidget", "完成后自动重启HPool挖矿"))
         self.label.setText(_translate("PlotWidget", "如果要并行P图，需要创建多条任务"))
         self.buttonCreatePlot.setText(_translate("PlotWidget", "创建任务"))

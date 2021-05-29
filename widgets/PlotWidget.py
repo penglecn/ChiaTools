@@ -51,6 +51,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         self.buttonCreatePlot.clicked.connect(self.clickCreatePlot)
 
         self.timerIdUpdateTime = self.startTimer(1000)
+        self.timerIdSaveTasks = self.startTimer(1000 * 60)
 
         config = get_config()
 
@@ -110,6 +111,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         if timer == self.timerIdUpdateTime:
             self.updateTaskTimes()
+        elif timer == self.timerIdSaveTasks:
+            PlotTaskManager.save_tasks()
 
     def showTaskMenu(self, pos):
         item: QTreeWidgetItem = self.treePlot.itemAt(pos)
