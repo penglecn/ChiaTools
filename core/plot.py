@@ -946,20 +946,26 @@ class PlotTaskManager(QObject):
         PlotTaskManager.task_lock.write_acquire()
         PlotTaskManager.tasks.append(task)
         PlotTaskManager.task_lock.write_release()
-        self.save_tasks()
+        PlotTaskManager.save_tasks()
 
     def remove_task(self, task: PlotTask):
         PlotTaskManager.task_lock.write_acquire()
         PlotTaskManager.tasks.remove(task)
         PlotTaskManager.task_lock.write_release()
-        self.save_tasks()
+        PlotTaskManager.save_tasks()
 
-    def load_tasks(self):
+    @staticmethod
+    def load_tasks():
         PlotTaskManager.task_lock.write_acquire()
-        filename = os.path.join(BASE_DIR, 'tasks.pkl')
-        if os.path.exists(filename):
-            task_data = open(filename, 'rb').read()
-            PlotTaskManager.tasks = pickle.loads(task_data)
+        PlotTaskManager.tasks = []
+
+        try:
+            filename = os.path.join(BASE_DIR, 'tasks.pkl')
+            if os.path.exists(filename):
+                task_data = open(filename, 'rb').read()
+                PlotTaskManager.tasks = pickle.loads(task_data)
+        except:
+            pass
 
         changed = False
         for task in PlotTaskManager.tasks:
@@ -973,14 +979,23 @@ class PlotTaskManager(QObject):
         PlotTaskManager.task_lock.write_release()
 
         if changed:
-            self.save_tasks()
+            PlotTaskManager.save_tasks()
 
-    def save_tasks(self):
+    @staticmethod
+    def save_tasks():
+        filename_tmp = os.path.join(BASE_DIR, 'tasks.pkl.tmp')
         filename = os.path.join(BASE_DIR, 'tasks.pkl')
+
         PlotTaskManager.task_lock.read_acquire()
         tasks_data = pickle.dumps(PlotTaskManager.tasks)
         PlotTaskManager.task_lock.read_release()
-        open(filename, 'wb').write(tasks_data)
+
+        try:
+            open(filename_tmp, 'wb').write(tasks_data)
+            os.remove(filename)
+            os.rename(filename_tmp, filename)
+        except Exception as e:
+            pass
         return
 
     @staticmethod

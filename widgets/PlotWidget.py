@@ -490,8 +490,6 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         if sub_item:
             self.updateSubTaskItem(sub_item, sub_task)
 
-        self.task_manager.save_tasks()
-
     def getItemFromTask(self, task: PlotTask):
         for i in range(self.treePlot.topLevelItemCount()):
             item = self.treePlot.topLevelItem(i)

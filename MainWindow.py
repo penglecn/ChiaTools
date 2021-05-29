@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 from ui.MainWindow import Ui_MainWindow
+from core.plot import PlotTaskManager
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -23,3 +24,5 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             QMessageBox.warning(self, '提示', '请先停止Plot任务')
             event.ignore()
             return
+
+        PlotTaskManager.save_tasks()
