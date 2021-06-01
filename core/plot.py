@@ -818,11 +818,11 @@ class PlotWorker(QThread):
             while True:
                 line = self.process.stdout.readline()
 
+                if not line and self.process.poll() is not None:
+                    break
+
                 text = line.decode('utf-8', errors='replace')
                 text = text.rstrip()
-
-                if not text and self.process.poll() is not None:
-                    break
 
                 if text:
                     self.sub_task.log.append(text)
@@ -837,23 +837,22 @@ class PlotWorker(QThread):
             self.process = None
             self.task.running = False
 
-            stop = False
             failed = False
 
             plot_path = os.path.join(self.sub_task.hdd_folder, self.plot_filename)
 
             if self.stopping:
                 self.stopping = False
-                stop = failed = True
+                failed = True
                 self.sub_task.status = '已手动停止'
-            elif not self.plot_filename:
-                stop = failed = True
-                self.sub_task.status = '没有plot文件名'
             elif not success or not finished:
-                stop = failed = True
+                failed = True
                 self.sub_task.status = '失败'
+            elif not self.plot_filename:
+                failed = True
+                self.sub_task.status = '没有plot文件名'
             elif not os.path.exists(plot_path) and not is_debug():
-                stop = failed = True
+                failed = True
                 self.sub_task.status = 'plot文件不存在'
             else:
                 self.sub_task.status = '完成'
@@ -882,18 +881,6 @@ class PlotWorker(QThread):
                     rest_sub_task.status = self.sub_task.status
                     rest_sub_task.finish = True
                     self.updateTask(sub_task=rest_sub_task)
-                break
-
-            if stop:
-                for i in range(self.task.current_task_index + 1, len(self.task.sub_tasks)):
-                    rest_sub_task = self.task.sub_tasks[i]
-                    rest_sub_task.success = False
-                    rest_sub_task.status = '已手动停止'
-                    rest_sub_task.finish = True
-                    self.updateTask(sub_task=rest_sub_task)
-                else:
-                    self.updateTask()
-
                 break
 
     def updateTask(self, task=None, sub_task=None):
