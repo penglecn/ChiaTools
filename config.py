@@ -47,7 +47,14 @@ def save_config():
 
     if not os.path.exists(__config_dir):
         os.mkdir(__config_dir)
+    __config_filename_tmp = os.path.join(__config_dir, 'config.json.tmp')
     __config_filename = os.path.join(__config_dir, 'config.json')
 
     cfg_json = json.dumps(config, indent='  ')
-    open(__config_filename, 'w').write(cfg_json)
+
+    try:
+        open(__config_filename_tmp, 'w').write(cfg_json)
+        os.remove(__config_filename)
+        os.rename(__config_filename_tmp, __config_filename)
+    except Exception as e:
+        pass
