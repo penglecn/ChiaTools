@@ -37,7 +37,7 @@ class PlotTask(QObject):
         self.ppk = ''
         self.k = 32
         self.buckets = 128
-        self.bitfield = True
+        self.nobitfield = False
         self.ssd_folder = ''
         self.hdd_folder = ''
         self.auto_hdd_folder = False
@@ -278,7 +278,7 @@ class PlotSubTask(QObject):
             self.hdd_folder = task.hdd_folder
         self.k = task.k
         self.buckets = task.buckets
-        self.bitfield = task.bitfield
+        self.nobitfield = task.nobitfield
 
         self.log = []
 
@@ -361,7 +361,7 @@ class PlotWorker(QThread):
         if self.phase == 1:
             return True
         elif self.phase == 2:
-            if self.sub_task.bitfield:
+            if not self.sub_task.nobitfield:
                 return False
             return buckets == 128 or buckets == 64
         elif self.phase == 3:
@@ -442,7 +442,7 @@ class PlotWorker(QThread):
                 else:
                     return
             elif self.phase == 2:
-                if self.sub_task.bitfield:
+                if not self.sub_task.nobitfield:
                     return
                 if self.table == 'Backpropagating on table 6':
                     base_progress = 29.167
@@ -740,7 +740,7 @@ class PlotWorker(QThread):
                 '-b', f'{t.memory_size}',
             ]
 
-        if not t.bitfield:
+        if t.nobitfield:
             args.append('-e')
 
         return args

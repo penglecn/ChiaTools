@@ -49,6 +49,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         self.spinBoxTotalCount.valueChanged.connect(self.changeTotalLimitCount)
 
         self.buttonCreatePlot.clicked.connect(self.clickCreatePlot)
+        self.buttonCreateBatchPlots.clicked.connect(self.clickCreateBatchPlots)
 
         self.timerIdUpdateTime = self.startTimer(1000)
         self.timerIdSaveTasks = self.startTimer(1000 * 60)
@@ -463,13 +464,19 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 if sub_item:
                     self.updateSubTaskItem(sub_item, task.current_sub_task)
 
+    def clickCreateBatchPlots(self):
+        self.create_plot(True)
+
     def clickCreatePlot(self):
+        self.create_plot(False)
+
+    def create_plot(self, auto=False):
         config = get_config()
         if 'ssd_folders' not in config or not config['ssd_folders'] or 'hdd_folders' not in config or not config['hdd_folders']:
             QMessageBox.information(self, '提示', '请先配置硬盘')
             return
 
-        dlg = CreatePlotDialog(parent=self, task=None)
+        dlg = CreatePlotDialog(parent=self, task=None, auto=auto)
         if dlg.exec() == dlg.Rejected:
             return
 

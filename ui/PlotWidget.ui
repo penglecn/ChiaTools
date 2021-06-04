@@ -118,9 +118,9 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="label">
+      <widget class="QPushButton" name="buttonCreateBatchPlots">
        <property name="text">
-        <string>如果要并行P图，需要创建多条任务</string>
+        <string>批量创建任务</string>
        </property>
       </widget>
      </item>

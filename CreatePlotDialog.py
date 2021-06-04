@@ -1,26 +1,29 @@
-from PyQt5.QtWidgets import QDialog, QMessageBox
+import psutil
+from PyQt5.QtWidgets import QDialog, QMessageBox, QTextEdit
 from PyQt5.QtCore import Qt
 from ui.CreatePlotDialog import Ui_CreatePlotDialog
 from core.plot import PlotTask, PlotSubTask
 from config import get_config, save_config
 import os
-from utils import make_name, size_to_str, get_k_size
+from utils import make_name, size_to_str, get_k_size, get_k_temp_size, get_fpk_ppk, get_official_chia_exe
 from datetime import datetime
 from core.disk import get_disk_usage
 from PyQt5.QtWidgets import QFileDialog
 from core import BASE_DIR, is_debug
 import platform
-import re
-from subprocess import Popen, PIPE, CREATE_NO_WINDOW
+from typing import Optional
 
 
 class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     last_ssd_folder = ''
     last_hdd_folder = ''
 
-    def __init__(self, task: PlotTask=None, *args, **kwargs):
+    def __init__(self, task: Optional[PlotTask] = None, auto=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+
+        self.task = None
+        self.batch_tasks = []
 
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
@@ -28,11 +31,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.buttonBox.button(self.buttonBox.Ok).setText('创建')
         self.buttonBox.button(self.buttonBox.Cancel).setText('取消')
-        self.checkBoxSpecifyCount.stateChanged.connect(self.checkSpecifyCount)
-        self.commandLinkButton.clicked.connect(self.aboutPublicKey)
+        self.checkBoxSpecifyCount.stateChanged.connect(self.check_specify_count)
+        self.commandLinkButton.clicked.connect(self.about_public_key)
         self.spinNumber.valueChanged.connect(self.update_tip_text)
-        self.comboSSD.currentIndexChanged.connect(self.update_tip_text)
-        self.comboHDD.currentIndexChanged.connect(self.update_tip_text)
 
         self.comboK.addItem('101.4GiB (k=32, 临时文件: 239GiB)', 32)
         self.comboK.addItem('208.8GiB (k=33, 临时文件: 521GiB)', 33)
@@ -43,14 +44,14 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
         self.comboCmdLine.setCurrentIndex(0)
 
-        chia_exe = self.get_official_chia_exe()
+        chia_exe = get_official_chia_exe()
         if chia_exe:
             self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
             self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
 
         self.comboCmdLine.addItem('手动选择', 'select')
-        self.comboCmdLine.currentIndexChanged.connect(self.changeCmdLine)
-        self.changeCmdLine()
+        self.comboCmdLine.currentIndexChanged.connect(self.change_cmdline)
+        self.change_cmdline()
 
         def select_cmdline(cmdline):
             for i in range(self.comboCmdLine.count()):
@@ -115,16 +116,17 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.spinBucketNum.setValue(task.buckets)
             select_k_combo(task.k)
-            self.checkBoxBitfield.setChecked(task.bitfield)
+            self.checkBoxNoBitfield.setChecked(task.nobitfield)
             select_cmdline(task.cmdline)
 
             self.setWindowTitle('编辑P图任务')
 
             self.buttonBox.button(self.buttonBox.Ok).setText('修改')
         else:
-            self.task = PlotTask()
-
             current_index = 0
+            self.comboSSD.addItem('自动', 'auto')
+            if not auto:
+                current_index = 1
             for ssd_folder in config['ssd_folders']:
                 text = ssd_folder
                 if os.path.exists(ssd_folder):
@@ -161,7 +163,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 ppk = config['ppk']
 
             if not fpk and not ppk and chia_exe:
-                fpk, ppk = self.get_fpk_ppk(chia_exe)
+                fpk, ppk = get_fpk_ppk(chia_exe)
 
             self.editFpk.setPlainText(fpk)
             self.editPpk.setPlainText(ppk)
@@ -186,15 +188,132 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if 'k' in config:
                 select_k_combo(config['k'])
 
-            self.checkBoxBitfield.setChecked(True)
-            if 'bitfield' in config:
-                self.checkBoxBitfield.setChecked(config['bitfield'])
-
             if 'cmdline' in config:
                 select_cmdline(config['cmdline'])
 
-        self.checkBoxBitfield.stateChanged.connect(self.checkBitfield)
+        self.comboSSD.currentIndexChanged.connect(self.changed_ssd)
+        self.comboHDD.currentIndexChanged.connect(self.update_tip_text)
+        self.checkBoxNoBitfield.stateChanged.connect(self.check_nobitfield)
 
+        self.comboCmdLine.currentIndexChanged.connect(self.create_batch_tasks)
+        self.comboSSD.currentIndexChanged.connect(self.create_batch_tasks)
+        self.comboHDD.currentIndexChanged.connect(self.create_batch_tasks)
+        self.checkBoxNoBitfield.stateChanged.connect(self.create_batch_tasks)
+        self.editFpk.textChanged.connect(self.create_batch_tasks)
+        self.editPpk.textChanged.connect(self.create_batch_tasks)
+        self.comboK.currentIndexChanged.connect(self.create_batch_tasks)
+        self.spinBucketNum.valueChanged.connect(self.create_batch_tasks)
+        self.spinReservedMemory.valueChanged.connect(self.create_batch_tasks)
+
+        self.changed_ssd()
+        self.update_tip_text()
+
+    def create_batch_tasks(self):
+        if self.comboSSD.currentData() != 'auto':
+            self.batch_tasks.clear()
+            self.treeWidgetTasks.clear()
+            return
+
+        min_memory_size = 2 ** 30 * 3
+        reserved_memory_size = self.spinReservedMemory.value()
+
+        cpu_core = psutil.cpu_count()
+        total_memory = psutil.virtual_memory().total
+        available_memory = total_memory - reserved_memory_size * 1024 * 1024
+
+        if available_memory < min_memory_size:
+            QMessageBox.information(self, '提示', f'系统可使用的内存小于{size_to_str(min_memory_size)}，无法创建批量任务')
+            return
+
+        k = self.comboK.currentData()
+        k_temp_size = get_k_temp_size(k)
+
+        config = get_config()
+
+        total_count = 0
+        ssd_count_map = {}
+
+        for ssd_folder in config['ssd_folders']:
+            usage = get_disk_usage(ssd_folder)
+            if not usage:
+                continue
+            count = int(usage.total // k_temp_size)
+            total_count += count
+
+            ssd_count_map[ssd_folder] = {
+                'count': count,
+                'reduced': 0,
+            }
+
+        def reduce_count():
+            ssd_to_reduce = None
+            last_ssd_reduce_count = 0
+            for ssd in ssd_count_map:
+                if ssd_count_map[ssd]['count'] == 0:
+                    continue
+                if ssd_to_reduce is None:
+                    ssd_to_reduce = ssd_count_map[ssd]
+                    last_ssd_reduce_count = ssd_to_reduce['reduced']
+                if ssd_count_map[ssd]['reduced'] < last_ssd_reduce_count:
+                    ssd_to_reduce = ssd_count_map[ssd]
+
+            if ssd_to_reduce is None:
+                return 0
+
+            if ssd_to_reduce['count'] <= 0:
+                return 0
+
+            ssd_to_reduce['count'] -= 1
+            ssd_to_reduce['reduced'] += 1
+
+            return total_count - 1
+
+        while available_memory // total_count < min_memory_size:
+            total_count = reduce_count()
+            if total_count == 0:
+                break
+
+        if total_count == 0:
+            QMessageBox.information(self, '提示', f'当前系统资源无法创建任何任务')
+            return
+
+        self.batch_tasks.clear()
+
+    def reload_batch_tasks(self):
+        self.treeWidgetTasks.clear()
+
+    def changed_ssd(self):
+        ssd = self.comboSSD.currentData()
+        auto = ssd == 'auto'
+
+        self.labelTip.setVisible(not auto)
+        self.treeWidgetTasks.setVisible(auto)
+
+        self.spinMemory.setDisabled(auto)
+        self.spinThreadNum.setDisabled(auto)
+        self.timeEditDelay.setDisabled(auto)
+        self.labelReserve.setVisible(auto)
+        self.spinReservedMemory.setVisible(auto)
+
+        if auto:
+            self.checkBoxSpecifyCount.setCheckState(0)
+            self.checkBoxSpecifyCount.setDisabled(True)
+            self.spinNumber.setDisabled(True)
+            self.setWindowTitle('批量创建任务')
+            self.buttonBox.button(self.buttonBox.Ok).setText('批量创建')
+
+            self.create_batch_tasks()
+        else:
+            self.checkBoxSpecifyCount.setDisabled(False)
+
+            if not self.modify:
+                self.setWindowTitle('创建任务')
+                self.buttonBox.button(self.buttonBox.Ok).setText('创建')
+
+            self.batch_tasks.clear()
+            self.treeWidgetTasks.clear()
+
+        self.adjustSize()
         self.update_tip_text()
 
     def update_tip_text(self):
@@ -219,6 +338,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.labelTip.setText(text)
 
+        self.adjustSize()
+
     def get_builtin_exe(self):
         plat = platform.system()
         if plat == 'Windows':
@@ -234,7 +355,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             return os.path.join(exe_cwd, 'test.exe')
         return os.path.join(exe_cwd, 'ProofOfSpace.exe')
 
-    def changeCmdLine(self):
+    def change_cmdline(self):
         data = self.comboCmdLine.currentData(Qt.UserRole)
         if data == 'select':
             chia_exe = QFileDialog.getOpenFileName(self, '选择钱包chia.exe', directory=os.getenv('LOCALAPPDATA'), filter='chia.exe')[0]
@@ -242,75 +363,16 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         else:
             self.lineEditCmdLine.setText(data)
 
-    @staticmethod
-    def get_fpk_ppk(chia_exe):
-        args = [
-            chia_exe,
-            'keys',
-            'show',
-        ]
-        process = Popen(args, stdout=PIPE, stderr=PIPE, cwd=os.path.dirname(chia_exe), creationflags=CREATE_NO_WINDOW)
-
-        fpk = ''
-        ppk = ''
-
-        while True:
-            line = process.stdout.readline()
-
-            text = line.decode('utf-8', errors='replace')
-            if not text and process.poll() is not None:
-                break
-
-            text = text.rstrip()
-
-            if text.startswith('Farmer public key'):
-                r = re.compile(r': (.*)')
-                found = re.findall(r, text)
-                if found:
-                    fpk = found[0]
-            elif text.startswith('Pool public key'):
-                r = re.compile(r': (.*)')
-                found = re.findall(r, text)
-                if found:
-                    ppk = found[0]
-
-        return fpk, ppk
-
-    @staticmethod
-    def get_official_chia_exe():
-        app_data = os.getenv('LOCALAPPDATA')
-        if app_data is None:
-            return ''
-        folder = os.path.join(app_data, 'chia-blockchain')
-        if not os.path.exists(folder):
-            return ''
-
-        app_folder = ''
-        for o in os.listdir(folder):
-            if not o.startswith('app-'):
-                continue
-            sub_folder = os.path.join(folder, o)
-            if os.path.isdir(sub_folder):
-                app_folder = sub_folder
-
-        if not app_folder:
-            return ''
-
-        chia_exe = os.path.join(app_folder, 'resources', 'app.asar.unpacked', 'daemon', 'chia.exe')
-        if not os.path.exists(chia_exe):
-            return ''
-        return chia_exe
-
-    def aboutPublicKey(self):
+    def about_public_key(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词。\n如果你已经安装了Chia官方钱包软件并且创建了钱包，fpk和ppk会自动获取。如果没有安装，请使用第三方工具（如：HPool提供的签名软件等）来生成。')
 
-    def checkBitfield(self, value):
-        if value == 0:
+    def check_nobitfield(self, value):
+        if value != 0:
             if QMessageBox.information(self, '提示', f'禁止位域会导致P图过程效率低且临时文件大，确定要禁止吗？',
                                        QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
-                self.checkBoxBitfield.setCheckState(2)
+                self.checkBoxNoBitfield.setCheckState(0)
 
-    def checkSpecifyCount(self):
+    def check_specify_count(self):
         self.spinNumber.setDisabled(not self.checkBoxSpecifyCount.isChecked())
 
         self.update_tip_text()
@@ -321,7 +383,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             memory_size = self.spinMemory.value()
             buckets = self.spinBucketNum.value()
             k = int(self.comboK.currentData(Qt.UserRole))
-            bitfield = self.checkBoxBitfield.isChecked()
+            nobitfield = self.checkBoxNoBitfield.isChecked()
             hdd_folder = self.comboHDD.currentData(Qt.UserRole)
             cmdline = self.lineEditCmdLine.text()
 
@@ -339,10 +401,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.task.memory_size = memory_size
             self.task.buckets = buckets
             self.task.k = k
-            self.task.bitfield = bitfield
+            self.task.nobitfield = nobitfield
             self.task.cmdline = cmdline
             self.task.inner_cmdline = cmdline == self.get_builtin_exe()
-            self.task.official_cmdline = cmdline == self.get_official_chia_exe()
+            self.task.official_cmdline = cmdline == get_official_chia_exe()
 
             if self.task.specify_count:
                 for sub in self.task.sub_tasks:
@@ -354,7 +416,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
                         sub.buckets = buckets
                         sub.k = k
-                        sub.bitfield = bitfield
+                        sub.nobitfield = nobitfield
 
             super().accept()
             return
@@ -362,7 +424,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         ppk = self.editPpk.toPlainText()
         buckets = self.spinBucketNum.value()
         k = int(self.comboK.currentData(Qt.UserRole))
-        bitfield = self.checkBoxBitfield.isChecked()
+        nobitfield = self.checkBoxNoBitfield.isChecked()
         cmdline = self.lineEditCmdLine.text()
 
         ssd_folder = self.comboSSD.currentData()
@@ -421,7 +483,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         config['ppk'] = ppk
         config['buckets'] = buckets
         config['k'] = k
-        config['bitfield'] = bitfield
         config['specify_count'] = specify_count
         config['num'] = number
         config['thread_num'] = thread_num
@@ -450,15 +511,17 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 if QMessageBox.information(self, '提示', f'最终目录的空间不足{size_to_str(k_size)}，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                     return
 
+        self.task = PlotTask()
+
         self.task.cmdline = cmdline
         self.task.inner_cmdline = cmdline == self.get_builtin_exe()
-        self.task.official_cmdline = cmdline == self.get_official_chia_exe()
+        self.task.official_cmdline = cmdline == get_official_chia_exe()
         self.task.create_time = datetime.now()
         self.task.fpk = fpk
         self.task.ppk = ppk
         self.task.buckets = buckets
         self.task.k = k
-        self.task.bitfield = bitfield
+        self.task.nobitfield = nobitfield
         self.task.ssd_folder = ssd_folder
         if hdd_folder == 'auto':
             self.task.auto_hdd_folder = True
