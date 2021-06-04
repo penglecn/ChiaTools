@@ -303,6 +303,7 @@ path:
 {paths}
 minerName: {config['miner_name']}
 apiKey: {config['apikey']}
+singleThreadLoad: false
 cachePath: ""
 deviceId: ""
 extraParams: {{}}
