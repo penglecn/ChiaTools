@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QMessageBox
 from ui.MainWindow import Ui_MainWindow
 from core.plot import PlotTaskManager
+from version import version, beta
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -12,7 +13,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tabMineWidget.setMainWindow(self)
         self.tabWidget.indexOf(self.tabMineWidget)
 
-        self.setWindowTitle('ChiaTools - 1.3.1')
+        self.setWindowTitle('ChiaTools - ' + version + (' - ' + beta if beta else ''))
 
     def closeEvent(self, event):
         if self.tabMineWidget.mine_process:
