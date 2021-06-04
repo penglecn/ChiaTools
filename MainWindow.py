@@ -11,7 +11,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tabFoldersWidget.setMainWindow(self)
         self.tabPlotWidget.setMainWindow(self)
         self.tabMineWidget.setMainWindow(self)
-        self.tabWidget.indexOf(self.tabMineWidget)
 
         self.setWindowTitle('ChiaTools - ' + version + (' - ' + beta if beta else ''))
 

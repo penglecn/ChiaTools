@@ -75,6 +75,9 @@ class MineWidget(QWidget, Ui_MineWidget):
             auto_start = is_auto_launch()
 
         if auto_start:
+            idx = self.main_window.tabWidget.indexOf(self.main_window.tabMine)
+            self.main_window.tabWidget.setCurrentIndex(idx)
+
             self.checkBoxAutoStart.setChecked(True)
             self.startMine()
 
