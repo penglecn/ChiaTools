@@ -65,7 +65,8 @@ def save_config():
 
     try:
         open(__config_filename_tmp, 'w').write(cfg_json)
-        os.remove(__config_filename)
+        if os.path.exists(__config_filename):
+            os.remove(__config_filename)
         os.rename(__config_filename_tmp, __config_filename)
     except Exception as e:
         pass

@@ -1062,7 +1062,8 @@ class PlotTaskManager(QObject):
 
         try:
             open(filename_tmp, 'wb').write(tasks_data)
-            os.remove(filename)
+            if os.path.exists(filename):
+                os.remove(filename)
             os.rename(filename_tmp, filename)
         except Exception as e:
             pass
