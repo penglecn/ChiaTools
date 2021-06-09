@@ -126,20 +126,21 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.buttonBox.button(self.buttonBox.Ok).setText('修改')
         else:
-            current_index = 0
             self.comboSSD.addItem('自动', 'auto')
-            if not auto:
+            if auto:
+                current_index = 0
+            else:
                 current_index = 1
-            for ssd_folder in config['ssd_folders']:
-                text = ssd_folder
-                if os.path.exists(ssd_folder):
-                    usage = get_disk_usage(ssd_folder)
-                    text += f" ({size_to_str(usage.free)}空闲)"
-                else:
-                    text += " (不存在)"
-                if ssd_folder == CreatePlotDialog.last_ssd_folder:
-                    current_index = self.comboSSD.count()
-                self.comboSSD.addItem(text, ssd_folder)
+                for ssd_folder in config['ssd_folders']:
+                    text = ssd_folder
+                    if os.path.exists(ssd_folder):
+                        usage = get_disk_usage(ssd_folder)
+                        text += f" ({size_to_str(usage.free)}空闲)"
+                    else:
+                        text += " (不存在)"
+                    if ssd_folder == CreatePlotDialog.last_ssd_folder:
+                        current_index = self.comboSSD.count()
+                    self.comboSSD.addItem(text, ssd_folder)
             self.comboSSD.setCurrentIndex(current_index)
 
             current_index = 0
@@ -609,11 +610,13 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 _thread = batch_task['thread']
                 _delay = batch_task['delay']
 
+                _memory = _memory // 1024 // 1024
+
                 task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, buckets=buckets, k=k, nobitfield=nobitfield,
                                         ssd_folder=_ssd_folder, hdd_folder=_hdd_folder, specify_count=False,
                                         count=1, thread_num=_thread, memory_size=_memory, delay=_delay)
                 if task:
-                    self.result = [task]
+                    self.result.append(task)
         else:
             task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, buckets=buckets, k=k, nobitfield=nobitfield,
                                     ssd_folder=ssd_folder, hdd_folder=hdd_folder, specify_count=specify_count,
