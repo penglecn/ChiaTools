@@ -52,7 +52,7 @@
      <item>
       <widget class="QLabel" name="labelStatus">
        <property name="text">
-        <string>状态</string>
+        <string>    </string>
        </property>
       </widget>
      </item>

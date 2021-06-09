@@ -53,7 +53,7 @@ class DiskOperation(QThread):
             name = op['name']
             opt = op['opt']
 
-            if name == 'updateDriverSpaces':
+            if name == 'updateSSDDriverSpaces' or name == 'updateHDDDriverSpaces':
                 self.run_updateDriverSpaces(opt)
             elif name == 'updateTotalSpaces':
                 self.run_updateTotalSpaces(opt)
@@ -80,6 +80,8 @@ class DiskOperation(QThread):
             except:
                 pass
 
+            folder_usage['plots_info'] = self.get_folder_plots_info(folder)
+
             result[folder] = folder_usage
 
         opt['result'] = result
@@ -89,6 +91,11 @@ class DiskOperation(QThread):
 
         total_space = total_free = total_used = 0
 
+        total_size = 0
+        total_count = 0
+        yesterday_count = 0
+        today_count = 0
+
         try:
             for folder in folders:
                 if os.path.exists(folder):
@@ -96,12 +103,26 @@ class DiskOperation(QThread):
                     total_space += usage.total
                     total_used += usage.used
                     total_free += usage.free
+
+                    info = self.get_folder_plots_info(folder)
+                    total_size += info['total_size']
+                    total_count += info['total_count']
+                    yesterday_count += info['yesterday_count']
+                    today_count += info['today_count']
         except:
             pass
 
-        result = {'total_space': total_space, 'total_free': total_free, 'total_used': total_used}
-
-        opt['result'] = result
+        opt['result'] = {
+            'total_space': total_space,
+            'total_free': total_free,
+            'total_used': total_used,
+            'plots_info': {
+                'total_size': total_size,
+                'total_count': total_count,
+                'yesterday_count': yesterday_count,
+                'today_count': today_count,
+            },
+        }
 
     def run_updateTotalGB(self, opt):
         folders = opt['folders']
@@ -111,14 +132,33 @@ class DiskOperation(QThread):
         yesterday_count = 0
         today_count = 0
 
+        for folder in folders:
+            info = self.get_folder_plots_info(folder)
+            if info is None:
+                continue
+            total_size += info['total_size']
+            total_count += info['total_count']
+            yesterday_count += info['yesterday_count']
+            today_count += info['today_count']
+
+        opt['result'] = {
+            'total_size': total_size,
+            'total_count': total_count,
+            'yesterday_count': yesterday_count,
+            'today_count': today_count,
+        }
+
+    def get_folder_plots_info(self, folder):
+        total_size = 0
+        total_count = 0
+        yesterday_count = 0
+        today_count = 0
+
         today = datetime.now()
         yesterday = datetime.now() - timedelta(days=1)
 
         try:
-            for folder in folders:
-                if not os.path.exists(folder):
-                    continue
-
+            if os.path.exists(folder):
                 files = os.listdir(folder)
                 for f in files:
                     if not f.endswith('.plot'):
@@ -137,6 +177,12 @@ class DiskOperation(QThread):
         except:
             pass
 
-        result = {'total_size': total_size, 'total_count': total_count, 'yesterday_count': yesterday_count, 'today_count': today_count}
+        return {
+            'total_size': total_size,
+            'total_count': total_count,
+            'yesterday_count': yesterday_count,
+            'today_count': today_count,
+        }
 
-        opt['result'] = result
+
+disk_operation = DiskOperation()

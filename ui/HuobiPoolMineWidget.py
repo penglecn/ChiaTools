@@ -62,6 +62,6 @@ class Ui_HuobiPoolMineWidget(object):
         HuobiPoolMineWidget.setWindowTitle(_translate("HuobiPoolMineWidget", "Form"))
         self.label_2.setText(_translate("HuobiPoolMineWidget", "矿工名"))
         self.label.setText(_translate("HuobiPoolMineWidget", "Access-ID"))
-        self.labelStatus.setText(_translate("HuobiPoolMineWidget", "状态"))
+        self.labelStatus.setText(_translate("HuobiPoolMineWidget", "    "))
         self.buttonStart.setText(_translate("HuobiPoolMineWidget", "开始挖矿"))
         self.checkBoxAutoStart.setText(_translate("HuobiPoolMineWidget", "开机自动启动并开始挖矿"))

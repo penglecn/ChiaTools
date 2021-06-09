@@ -62,6 +62,6 @@ class Ui_HPoolMineWidget(object):
         HPoolMineWidget.setWindowTitle(_translate("HPoolMineWidget", "Form"))
         self.label_2.setText(_translate("HPoolMineWidget", "矿机名称"))
         self.label.setText(_translate("HPoolMineWidget", "API Key"))
-        self.labelStatus.setText(_translate("HPoolMineWidget", "状态"))
+        self.labelStatus.setText(_translate("HPoolMineWidget", "    "))
         self.buttonStart.setText(_translate("HPoolMineWidget", "开始挖矿"))
         self.checkBoxAutoStart.setText(_translate("HPoolMineWidget", "开机自动启动并开始挖矿"))

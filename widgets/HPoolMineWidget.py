@@ -12,7 +12,7 @@ import socket
 import threading
 import platform
 import time
-from core.disk import DiskOperation
+from core.disk import disk_operation
 from utils import is_auto_launch, setup_auto_launch
 
 
@@ -24,7 +24,6 @@ class HPoolMineWidget(QWidget, Ui_HPoolMineWidget):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        self.disk_operation = DiskOperation()
         self.main_window = None
 
         self.mine_process = None
@@ -56,8 +55,7 @@ class HPoolMineWidget(QWidget, Ui_HPoolMineWidget):
 
         self.timerIdCheckProcess = self.startTimer(1000)
 
-        self.disk_operation.signalResult.connect(self.slotDiskOperation)
-        self.disk_operation.start()
+        disk_operation.signalResult.connect(self.slotDiskOperation)
 
     def setMainWindow(self, win):
         self.main_window = win
@@ -115,7 +113,7 @@ class HPoolMineWidget(QWidget, Ui_HPoolMineWidget):
 
                 folders.append(folder)
 
-        self.disk_operation.add_operation('updateTotalGB', {
+        disk_operation.add_operation('updateTotalGB', {
             'folders': folders,
         })
 

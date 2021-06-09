@@ -2,12 +2,16 @@ from PyQt5.QtWidgets import QMainWindow, QMessageBox
 from ui.MainWindow import Ui_MainWindow
 from core.plot import PlotTaskManager
 from version import version, beta
+from core.disk import disk_operation
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
+
+        disk_operation.start()
+
         self.tabFoldersWidget.setMainWindow(self)
         self.tabPlotWidget.setMainWindow(self)
         self.tabHPoolMineWidget.setMainWindow(self)

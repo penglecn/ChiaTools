@@ -7,7 +7,7 @@ from config import save_config, get_config
 from utils import size_to_str, delta_to_str, seconds_to_str
 import psutil
 import os
-from core.disk import DiskOperation
+from core.disk import disk_operation
 
 
 class FoldersWidget(QWidget, Ui_FoldersWidget):
@@ -15,7 +15,6 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        self.disk_operation = DiskOperation()
         self.main_window = None
 
         self.treeSSD.header().setSectionResizeMode(QHeaderView.ResizeToContents)
@@ -30,8 +29,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         self.timerIdUpdateSpace = self.startTimer(1000 * 10)
 
-        self.disk_operation.signalResult.connect(self.slotDiskOperation)
-        self.disk_operation.start()
+        disk_operation.signalResult.connect(self.slotDiskOperation)
 
     def setMainWindow(self, win):
         self.main_window = win
@@ -64,11 +62,11 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             self.updateHDDSpaces()
 
     def updateHDDSpaces(self):
-        self.updateDriverSpaces(self.treeHDD, 1)
-        self.updateTotalSpaces(self.treeHDD, 1)
+        self.updateHDDDriverSpaces()
+        self.updateHDDTotalSpaces()
 
     def updateSSDSpaces(self):
-        self.updateDriverSpaces(self.treeSSD)
+        self.updateSSDDriverSpaces()
 
     def addSSDFolder(self, folder):
         item = QTreeWidgetItem()
@@ -88,7 +86,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         checkbox.setChecked(checked)
         checkbox.stateChanged.connect(self.saveHDDFolderChecks)
         self.treeHDD.setItemWidget(item, 0, checkbox)
-        self.treeHDD.setItemWidget(item, 5, QProgressBar())
+        self.treeHDD.setItemWidget(item, 6, QProgressBar())
 
         self.updateHDDSpaces()
 
@@ -195,68 +193,122 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
     def slotDiskOperation(self, name, opt):
         result = opt['result']
 
-        if name == 'updateDriverSpaces':
-            column_offset = opt['column_offset']
-            tree: QTreeWidget = opt['tree']
-
+        if name == 'updateSSDDriverSpaces':
             for folder, usage in result.items():
-                item: QTreeWidgetItem = None
-                for i in range(tree.topLevelItemCount()):
-                    _item: QTreeWidgetItem = tree.topLevelItem(i)
-                    if _item.text(column_offset) == folder:
-                        item = _item
-                        break
-
-                if item is None:
-                    continue
-
-                used = usage['used']
-                free = usage['free']
-                total = usage['total']
-                percent = usage['percent']
-
-                column = column_offset + 1
-                item.setText(column, size_to_str(used))
-
-                column += 1
-                item.setText(column, size_to_str(free))
-
-                column += 1
-                item.setText(column, size_to_str(total))
-
-                column += 1
-                progress_bar: QProgressBar = tree.itemWidget(item, column)
-                progress_bar.setValue(percent)
+                self.updateSSDItems(folder, usage)
+        elif name == 'updateHDDDriverSpaces':
+            for folder, usage in result.items():
+                self.updateHDDItems(folder, usage)
         elif name == 'updateTotalSpaces':
             total_space = result['total_space']
             total_used = result['total_used']
             total_free = result['total_free']
+            pi = result['plots_info']
 
-            self.labelTotalSpace.setText(f'{size_to_str(total_space)}')
-            self.labelTotalUsed.setText(f'{size_to_str(total_used)}')
-            self.labelTotalFree.setText(f'{size_to_str(total_free)}')
+            usage_status = f'总容量{size_to_str(total_space)}'
+            usage_status += f' 使用容量{size_to_str(total_used)}'
+            usage_status += f' 剩余容量{size_to_str(total_free)}'
 
-    def updateDriverSpaces(self, tree: QTreeWidget, column_offset=0):
+            plots_status = f' 昨天文件数{pi["yesterday_count"]}个'
+            plots_status += f' 今天文件数{pi["today_count"]}个'
+            plots_status += f' 总文件数{pi["total_count"]}个'
+            plots_status += f' 算力{size_to_str(pi["total_size"])}'
+
+            self.labelHDDUsage.setText(usage_status)
+            self.labelPlotsInfo.setText(plots_status)
+
+    def updateSSDItems(self, folder, usage):
+        item = None
+        for i in range(self.treeSSD.topLevelItemCount()):
+            _item: QTreeWidgetItem = self.treeSSD.topLevelItem(i)
+            if _item.text(0) == folder:
+                item = _item
+                break
+
+        if item is None:
+            return
+
+        used = usage['used']
+        free = usage['free']
+        total = usage['total']
+        percent = usage['percent']
+        plots_info = usage['plots_info']
+
+        column = 1
+        item.setText(column, size_to_str(total))
+
+        column += 1
+        item.setText(column, size_to_str(used))
+
+        column += 1
+        item.setText(column, size_to_str(free))
+
+        column += 1
+        progress_bar: QProgressBar = self.treeSSD.itemWidget(item, column)
+        progress_bar.setValue(percent)
+
+    def updateHDDItems(self, folder, usage):
+        item = None
+        for i in range(self.treeHDD.topLevelItemCount()):
+            _item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
+            if _item.text(1) == folder:
+                item = _item
+                break
+
+        if item is None:
+            return
+
+        used = usage['used']
+        free = usage['free']
+        total = usage['total']
+        percent = usage['percent']
+        plots_info = usage['plots_info']
+
+        column = 2
+        item.setText(column, size_to_str(total))
+
+        column += 1
+        item.setText(column, size_to_str(used))
+
+        column += 1
+        item.setText(column, size_to_str(free))
+
+        column += 1
+        item.setText(column, f'{plots_info["total_count"]}个')
+
+        column += 1
+        progress_bar: QProgressBar = self.treeHDD.itemWidget(item, column)
+        progress_bar.setValue(percent)
+
+    def updateSSDDriverSpaces(self):
         folders = []
-        for i in range(tree.topLevelItemCount()):
-            item = tree.topLevelItem(i)
-            folders.append(item.text(column_offset))
+        for i in range(self.treeSSD.topLevelItemCount()):
+            item = self.treeSSD.topLevelItem(i)
+            folders.append(item.text(0))
 
-        self.disk_operation.add_operation('updateDriverSpaces', {
-            'tree': tree,
+        disk_operation.add_operation('updateSSDDriverSpaces', {
             'folders': folders,
-            'column_offset': column_offset,
         })
 
-    def updateTotalSpaces(self, tree: QTreeWidget, column_offset=0):
+    def updateHDDDriverSpaces(self):
+        folders = []
+        for i in range(self.treeHDD.topLevelItemCount()):
+            item = self.treeHDD.topLevelItem(i)
+            folders.append(item.text(1))
+
+        disk_operation.add_operation('updateHDDDriverSpaces', {
+            'folders': folders,
+        })
+
+    def updateHDDTotalSpaces(self):
         folders = []
 
-        count = tree.topLevelItemCount()
+        count = self.treeHDD.topLevelItemCount()
         for i in range(count):
-            item = tree.topLevelItem(i)
-            folder = item.text(column_offset)
+            item = self.treeHDD.topLevelItem(i)
+            folder = item.text(1)
             folders.append(folder)
 
-        self.disk_operation.add_operation('updateTotalSpaces', {
+        disk_operation.add_operation('updateTotalSpaces', {
             'folders': folders,
         })
