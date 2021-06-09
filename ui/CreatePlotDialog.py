@@ -15,7 +15,7 @@ class Ui_CreatePlotDialog(object):
     def setupUi(self, CreatePlotDialog):
         CreatePlotDialog.setObjectName("CreatePlotDialog")
         CreatePlotDialog.setWindowModality(QtCore.Qt.WindowModal)
-        CreatePlotDialog.resize(507, 645)
+        CreatePlotDialog.resize(507, 778)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -138,6 +138,7 @@ class Ui_CreatePlotDialog(object):
         self.formLayout.setWidget(15, QtWidgets.QFormLayout.FieldRole, self.spinReservedMemory)
         self.verticalLayout.addLayout(self.formLayout)
         self.treeWidgetTasks = QtWidgets.QTreeWidget(CreatePlotDialog)
+        self.treeWidgetTasks.setMinimumSize(QtCore.QSize(0, 250))
         self.treeWidgetTasks.setObjectName("treeWidgetTasks")
         self.verticalLayout.addWidget(self.treeWidgetTasks)
         self.commandLinkButton = QtWidgets.QCommandLinkButton(CreatePlotDialog)

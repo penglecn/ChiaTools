@@ -265,6 +265,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 'reduced': 0,
             }
 
+        if total_count == 0:
+            QMessageBox.information(self, '提示', '当前系统资源无法创建任务')
+            return
+
         def reduce_count():
             ssd_to_reduce = None
             last_ssd_reduce_count = 0
@@ -299,7 +303,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             thread_per_task = cpu_core
 
         if total_count == 0 or mem_per_task < min_memory_size:
-            QMessageBox.information(self, '提示', '当前系统资源无法创建任何任务')
+            QMessageBox.information(self, '提示', '当前系统资源无法创建任务')
             return
 
         for ssd_folder in ssd_count_map:

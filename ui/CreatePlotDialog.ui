@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>507</width>
-    <height>645</height>
+    <height>778</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -265,6 +265,12 @@
    </item>
    <item>
     <widget class="QTreeWidget" name="treeWidgetTasks">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>250</height>
+      </size>
+     </property>
      <column>
       <property name="text">
        <string>临时目录</string>
