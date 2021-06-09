@@ -30,6 +30,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         self.task_manager.signalUpdateTask.connect(self.updateTaskStatus)
         self.task_manager.signalMakingPlot.connect(self.onMakingPlot)
         self.task_manager.signalNewPlot.connect(self.onNewPlot)
+        self.task_manager.signalNewSubTask.connect(self.onNewSubTask)
+        self.task_manager.signalSubTaskDone.connect(self.onSubTaskDone)
 
         self.outputDialogs = []
 
@@ -532,13 +534,19 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             task.start()
 
     def onMakingPlot(self, task: PlotTask, sub_task: PlotSubTask):
+        pass
+
+    def onNewPlot(self, task: PlotTask, sub_task: PlotSubTask):
+        pass
+
+    def onNewSubTask(self, task: PlotTask, sub_task: PlotSubTask):
+        pass
+
+    def onSubTaskDone(self, task: PlotTask, sub_task: PlotSubTask):
         if not task.specify_count:
             item = self.getItemFromTask(task)
             if item:
                 self.addSubTaskItem(item, sub_task)
-
-    def onNewPlot(self, task: PlotTask, sub_task: PlotSubTask):
-        pass
 
     def restartMine(self, log=''):
         if not self.main_window:

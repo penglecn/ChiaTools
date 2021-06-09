@@ -23,6 +23,8 @@ class PlotTask(QObject):
     signalUpdateTask = pyqtSignal(object, object)
     signalMakingPlot = pyqtSignal(object, object)
     signalNewPlot = pyqtSignal(object, object)
+    signalNewSubTask = pyqtSignal(object, object)
+    signalSubTaskDone = pyqtSignal(object, object)
 
     def __init__(self, *args, **kwargs):
         super(PlotTask, self).__init__(*args, **kwargs)
@@ -54,8 +56,10 @@ class PlotTask(QObject):
         self.current_task_index = 0
         self.sub_tasks: [PlotSubTask] = []
         self.able_to_next = True
+        self.doing_next = False
 
         self.signalMakingPlot.connect(self.makingPlot)
+        self.signalNewPlot.connect(self.newPlot)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -72,18 +76,41 @@ class PlotTask(QObject):
         if self.next_stop:
             return
 
-        if task.auto_hdd_folder:
-            self.able_to_next = PlotTaskManager.choise_available_hdd_folder(task.k) != ''
+        config = get_config()
+
+        if 'next_when_fully_complete' in config and config['next_when_fully_complete']:
+            return
+
+        if self.do_next():
+            self.doing_next = True
+
+    def newPlot(self, task, sub_task):
+        if self.doing_next:
+            self.doing_next = False
+            return
+
+        if self.next_stop:
+            return
+
+        self.do_next()
+
+    def do_next(self):
+        if self.auto_hdd_folder:
+            self.able_to_next = PlotTaskManager.choise_available_hdd_folder(self.k) != ''
         else:
-            self.able_to_next = PlotTaskManager.is_task_able_to_next(task)
+            self.able_to_next = PlotTaskManager.is_task_able_to_next(self)
 
         if self.specify_count:
             if self.current_task_index + 1 >= self.count:
-                return
+                return False
             else:
+                self.signalSubTaskDone.emit(self, self.current_sub_task)
                 self.current_task_index += 1
                 self.current_sub_task.worker.start()
+                self.signalNewSubTask.emit(self, self.current_sub_task)
         elif self.able_to_next:
+            self.signalSubTaskDone.emit(self, self.current_sub_task)
+
             new_sub_task = PlotSubTask(self, self.count)
             self.sub_tasks.append(new_sub_task)
 
@@ -91,6 +118,11 @@ class PlotTask(QObject):
             self.current_task_index += 1
 
             new_sub_task.worker.start()
+            self.signalNewSubTask.emit(self, new_sub_task)
+        else:
+            return False
+
+        return True
 
     def increase(self):
         self.sub_tasks.append(PlotSubTask(self, self.count))
@@ -554,6 +586,7 @@ class PlotWorker(QThread):
         elif text.startswith('Final File size'):
             self.copying = True
             self.sub_task.status = '生成文件'
+            self.sub_task.progress = 99.0
             self.task.signalMakingPlot.emit(self.task, self.sub_task)
             self.updateTask()
 
@@ -896,6 +929,8 @@ class PlotTaskManager(QObject):
     signalUpdateTask = pyqtSignal(object, object)
     signalMakingPlot = pyqtSignal(object, object)
     signalNewPlot = pyqtSignal(object, object)
+    signalNewSubTask = pyqtSignal(object, object)
+    signalSubTaskDone = pyqtSignal(object, object)
 
     tasks = []
     task_lock = RWlock()
@@ -975,6 +1010,8 @@ class PlotTaskManager(QObject):
         task.signalUpdateTask.connect(self.signalUpdateTask)
         task.signalMakingPlot.connect(self.signalMakingPlot)
         task.signalNewPlot.connect(self.signalNewPlot)
+        task.signalNewSubTask.connect(self.signalNewSubTask)
+        task.signalSubTaskDone.connect(self.signalSubTaskDone)
 
         PlotTaskManager.task_lock.write_acquire()
         PlotTaskManager.tasks.append(task)
