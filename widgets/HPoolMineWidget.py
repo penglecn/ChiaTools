@@ -7,7 +7,7 @@ from utils import size_to_str
 from datetime import datetime, timedelta
 import os
 from core import BASE_DIR
-from subprocess import Popen, PIPE, CREATE_NO_WINDOW
+from subprocess import Popen, PIPE, STDOUT, CREATE_NO_WINDOW
 import socket
 import threading
 import platform
@@ -317,7 +317,7 @@ debug: ""
         config_file = os.path.join(BASE_DIR, 'bin', folder, 'miner', 'hpool', 'config.yaml')
         exe_file = os.path.join(BASE_DIR, 'bin', folder, 'miner', 'hpool', bin_file)
 
-        self.mine_process = Popen([exe_file, '-config', config_file], stdout=PIPE, stderr=PIPE, creationflags=CREATE_NO_WINDOW)
+        self.mine_process = Popen([exe_file, '-config', config_file], stdout=PIPE, stderr=STDOUT, creationflags=CREATE_NO_WINDOW)
 
         while True:
             if self.mine_process is None:

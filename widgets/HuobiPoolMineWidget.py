@@ -7,7 +7,7 @@ from utils import size_to_str
 from datetime import datetime, timedelta
 import os
 from core import BASE_DIR
-from subprocess import Popen, PIPE, CREATE_NO_WINDOW
+from subprocess import Popen, PIPE, STDOUT, CREATE_NO_WINDOW
 import socket
 import threading
 import platform
@@ -254,7 +254,10 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
         else:
             return False
 
-        config_file = os.path.join(BASE_DIR, 'bin', folder, 'miner', 'huobi', 'config', 'config.yaml')
+        config_dir = os.path.join(BASE_DIR, 'bin', folder, 'miner', 'huobi', 'config')
+        if not os.path.exists(config_dir):
+            os.mkdir(config_dir)
+        config_file = os.path.join(config_dir, 'config.yaml')
 
         paths = ''
 
@@ -295,7 +298,7 @@ plots_dir:
 
         exe_file = os.path.join(BASE_DIR, 'bin', folder, 'miner', 'huobi', bin_file)
 
-        self.mine_process = Popen([exe_file], cwd=os.path.dirname(exe_file), stdout=PIPE, stderr=PIPE, creationflags=CREATE_NO_WINDOW)
+        self.mine_process = Popen([exe_file], cwd=os.path.dirname(exe_file), stdout=PIPE, stderr=STDOUT, creationflags=CREATE_NO_WINDOW)
 
         while True:
             if self.mine_process is None:
