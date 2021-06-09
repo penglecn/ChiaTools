@@ -1,11 +1,11 @@
 import psutil
-from PyQt5.QtWidgets import QDialog, QMessageBox, QTextEdit
+from PyQt5.QtWidgets import QDialog, QMessageBox, QTreeWidgetItem, QHeaderView
 from PyQt5.QtCore import Qt
 from ui.CreatePlotDialog import Ui_CreatePlotDialog
 from core.plot import PlotTask, PlotSubTask
 from config import get_config, save_config
 import os
-from utils import make_name, size_to_str, get_k_size, get_k_temp_size, get_fpk_ppk, get_official_chia_exe
+from utils import make_name, size_to_str, get_k_size, get_k_temp_size, get_fpk_ppk, get_official_chia_exe, seconds_to_str
 from datetime import datetime
 from core.disk import get_disk_usage
 from PyQt5.QtWidgets import QFileDialog
@@ -22,10 +22,13 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
+        self.result = []
         self.task = None
         self.batch_tasks = []
 
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
+
+        self.treeWidgetTasks.header().setSectionResizeMode(QHeaderView.ResizeToContents)
 
         config = get_config()
 
@@ -195,37 +198,54 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboHDD.currentIndexChanged.connect(self.update_tip_text)
         self.checkBoxNoBitfield.stateChanged.connect(self.check_nobitfield)
 
-        self.comboCmdLine.currentIndexChanged.connect(self.create_batch_tasks)
-        self.comboSSD.currentIndexChanged.connect(self.create_batch_tasks)
-        self.comboHDD.currentIndexChanged.connect(self.create_batch_tasks)
-        self.checkBoxNoBitfield.stateChanged.connect(self.create_batch_tasks)
-        self.editFpk.textChanged.connect(self.create_batch_tasks)
-        self.editPpk.textChanged.connect(self.create_batch_tasks)
-        self.comboK.currentIndexChanged.connect(self.create_batch_tasks)
-        self.spinBucketNum.valueChanged.connect(self.create_batch_tasks)
-        self.spinReservedMemory.valueChanged.connect(self.create_batch_tasks)
+        self.comboCmdLine.currentIndexChanged.connect(self.slot_create_batch_tasks)
+        self.comboSSD.currentIndexChanged.connect(self.slot_create_batch_tasks)
+        self.comboHDD.currentIndexChanged.connect(self.slot_create_batch_tasks)
+        self.checkBoxNoBitfield.stateChanged.connect(self.slot_create_batch_tasks)
+        self.editFpk.textChanged.connect(self.slot_create_batch_tasks)
+        self.editPpk.textChanged.connect(self.slot_create_batch_tasks)
+        self.comboK.currentIndexChanged.connect(self.slot_create_batch_tasks)
+        self.spinBucketNum.valueChanged.connect(self.slot_create_batch_tasks)
+        self.spinReservedMemory.valueChanged.connect(self.slot_create_batch_tasks)
 
         self.changed_ssd()
+        self.slot_create_batch_tasks()
         self.update_tip_text()
 
-    def create_batch_tasks(self):
+    def slot_create_batch_tasks(self):
+        self.batch_tasks.clear()
+        self.treeWidgetTasks.clear()
+
         if self.comboSSD.currentData() != 'auto':
-            self.batch_tasks.clear()
-            self.treeWidgetTasks.clear()
+            self.buttonBox.button(self.buttonBox.Ok).setDisabled(False)
+            return
+
+        self.buttonBox.button(self.buttonBox.Ok).setDisabled(True)
+
+        hdd_folder = self.comboHDD.currentData(Qt.UserRole)
+        fpk = self.editFpk.toPlainText()
+        ppk = self.editPpk.toPlainText()
+        k = int(self.comboK.currentData(Qt.UserRole))
+        cmdline = self.lineEditCmdLine.text()
+        reserved_memory = self.spinReservedMemory.value()
+
+        if not fpk or not ppk or not cmdline:
+            return
+
+        if hdd_folder != 'auto' and not os.path.exists(hdd_folder):
+            QMessageBox.information(self, '提示', '最终目录不存在')
             return
 
         min_memory_size = 2 ** 30 * 3
-        reserved_memory_size = self.spinReservedMemory.value()
 
         cpu_core = psutil.cpu_count()
         total_memory = psutil.virtual_memory().total
-        available_memory = total_memory - reserved_memory_size * 1024 * 1024
+        available_memory = total_memory - reserved_memory * 1024 * 1024
 
         if available_memory < min_memory_size:
             QMessageBox.information(self, '提示', f'系统可使用的内存小于{size_to_str(min_memory_size)}，无法创建批量任务')
             return
 
-        k = self.comboK.currentData()
         k_temp_size = get_k_temp_size(k)
 
         config = get_config()
@@ -273,14 +293,81 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if total_count == 0:
                 break
 
-        if total_count == 0:
-            QMessageBox.information(self, '提示', f'当前系统资源无法创建任何任务')
+        mem_per_task = available_memory // total_count
+        thread_per_task = int(cpu_core / total_count + 2)
+        if thread_per_task > cpu_core:
+            thread_per_task = cpu_core
+
+        if total_count == 0 or mem_per_task < min_memory_size:
+            QMessageBox.information(self, '提示', '当前系统资源无法创建任何任务')
             return
 
-        self.batch_tasks.clear()
+        for ssd_folder in ssd_count_map:
+            ssd = ssd_count_map[ssd_folder]
+            count = ssd['count']
 
-    def reload_batch_tasks(self):
+            if count > 6:
+                max_hour = 8
+            elif count == 5:
+                max_hour = 7
+            elif count == 4:
+                max_hour = 6
+            elif count == 3:
+                max_hour = 5
+            elif count <= 2:
+                max_hour = 4
+            else:
+                max_hour = 8
+            max_time = 60 * 60 * max_hour
+
+            delay_per_task = int(max_time / count)
+
+            for i in range(count):
+                self.batch_tasks.append({
+                    'ssd_folder': ssd_folder,
+                    'hdd_folder': hdd_folder,
+                    'memory': mem_per_task,
+                    'thread': thread_per_task,
+                    'delay': delay_per_task * i,
+                })
+
+        self.reload_batch_tasks(self.batch_tasks)
+
+        if self.batch_tasks:
+            self.buttonBox.button(self.buttonBox.Ok).setDisabled(False)
+
+    def reload_batch_tasks(self, batch_tasks):
         self.treeWidgetTasks.clear()
+
+        for task in batch_tasks:
+            ssd_folder = task['ssd_folder']
+            hdd_folder = task['hdd_folder']
+            memory = task['memory']
+            thread = task['thread']
+            delay = task['delay']
+
+            item = QTreeWidgetItem()
+
+            index = 0
+
+            item.setText(index, ssd_folder)
+
+            index += 1
+            if hdd_folder == 'auto':
+                item.setText(index, '自动')
+            else:
+                item.setText(index, hdd_folder)
+
+            index += 1
+            item.setText(index, size_to_str(memory))
+
+            index += 1
+            item.setText(index, f'{thread}')
+
+            index += 1
+            item.setText(index, f'{seconds_to_str(delay)}')
+
+            self.treeWidgetTasks.addTopLevelItem(item)
 
     def changed_ssd(self):
         ssd = self.comboSSD.currentData()
@@ -301,8 +388,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.spinNumber.setDisabled(True)
             self.setWindowTitle('批量创建任务')
             self.buttonBox.button(self.buttonBox.Ok).setText('批量创建')
-
-            self.create_batch_tasks()
         else:
             self.checkBoxSpecifyCount.setDisabled(False)
 
@@ -377,49 +462,54 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.update_tip_text()
 
+    def accept_modify(self):
+        thread_num = self.spinThreadNum.value()
+        memory_size = self.spinMemory.value()
+        buckets = self.spinBucketNum.value()
+        k = int(self.comboK.currentData(Qt.UserRole))
+        nobitfield = self.checkBoxNoBitfield.isChecked()
+        hdd_folder = self.comboHDD.currentData(Qt.UserRole)
+        cmdline = self.lineEditCmdLine.text()
+
+        if not cmdline:
+            QMessageBox.information(self, '提示', '请选择程序')
+            return
+
+        if hdd_folder == 'auto':
+            self.task.auto_hdd_folder = True
+        else:
+            self.task.auto_hdd_folder = False
+            self.task.hdd_folder = hdd_folder
+
+        self.task.number_of_thread = thread_num
+        self.task.memory_size = memory_size
+        self.task.buckets = buckets
+        self.task.k = k
+        self.task.nobitfield = nobitfield
+        self.task.cmdline = cmdline
+        self.task.inner_cmdline = cmdline == self.get_builtin_exe()
+        self.task.official_cmdline = cmdline == get_official_chia_exe()
+
+        if self.task.specify_count:
+            for sub in self.task.sub_tasks:
+                if not sub.finish and not sub.working:
+                    if hdd_folder == 'auto':
+                        sub.hdd_folder = ''
+                    else:
+                        sub.hdd_folder = hdd_folder
+
+                    sub.buckets = buckets
+                    sub.k = k
+                    sub.nobitfield = nobitfield
+
+        super().accept()
+        return
+
     def accept(self) -> None:
         if self.modify:
-            thread_num = self.spinThreadNum.value()
-            memory_size = self.spinMemory.value()
-            buckets = self.spinBucketNum.value()
-            k = int(self.comboK.currentData(Qt.UserRole))
-            nobitfield = self.checkBoxNoBitfield.isChecked()
-            hdd_folder = self.comboHDD.currentData(Qt.UserRole)
-            cmdline = self.lineEditCmdLine.text()
-
-            if not cmdline:
-                QMessageBox.information(self, '提示', '请选择程序')
-                return
-
-            if hdd_folder == 'auto':
-                self.task.auto_hdd_folder = True
-            else:
-                self.task.auto_hdd_folder = False
-                self.task.hdd_folder = hdd_folder
-
-            self.task.number_of_thread = thread_num
-            self.task.memory_size = memory_size
-            self.task.buckets = buckets
-            self.task.k = k
-            self.task.nobitfield = nobitfield
-            self.task.cmdline = cmdline
-            self.task.inner_cmdline = cmdline == self.get_builtin_exe()
-            self.task.official_cmdline = cmdline == get_official_chia_exe()
-
-            if self.task.specify_count:
-                for sub in self.task.sub_tasks:
-                    if not sub.finish and not sub.working:
-                        if hdd_folder == 'auto':
-                            sub.hdd_folder = ''
-                        else:
-                            sub.hdd_folder = hdd_folder
-
-                        sub.buckets = buckets
-                        sub.k = k
-                        sub.nobitfield = nobitfield
-
-            super().accept()
+            self.accept_modify()
             return
+
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
         buckets = self.spinBucketNum.value()
@@ -442,10 +532,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         memory_size = self.spinMemory.value()
 
         if not cmdline:
-            QMessageBox.information(self, '提示', '请选择程序')
+            QMessageBox.information(self, '提示', '请选择命令行程序')
             return
 
-        if not os.path.exists(ssd_folder):
+        if ssd_folder != 'auto' and not os.path.exists(ssd_folder):
             QMessageBox.information(self, '提示', '临时目录不存在')
             return
 
@@ -476,27 +566,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if not specify_count:
             number = 1
 
-        config = get_config()
-
-        config['cmdline'] = cmdline
-        config['fpk'] = fpk
-        config['ppk'] = ppk
-        config['buckets'] = buckets
-        config['k'] = k
-        config['specify_count'] = specify_count
-        config['num'] = number
-        config['thread_num'] = thread_num
-        config['memory_size'] = memory_size
-
-        save_config()
-
-        temporary_folder = os.path.join(ssd_folder, make_name(12))
-        temporary_folder = temporary_folder.replace('\\', '/')
-
-        try:
-            os.mkdir(temporary_folder)
-        except:
-            QMessageBox.information(self, '提示', '创建临时目录失败 %s' % temporary_folder)
+        if ssd_folder == 'auto' and not self.batch_tasks:
+            QMessageBox.information(self, '提示', f'当前系统资源无法创建批量任务')
             return
 
         if hdd_folder != 'auto':
@@ -511,34 +582,85 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 if QMessageBox.information(self, '提示', f'最终目录的空间不足{size_to_str(k_size)}，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                     return
 
-        self.task = PlotTask()
+        config = get_config()
 
-        self.task.cmdline = cmdline
-        self.task.inner_cmdline = cmdline == self.get_builtin_exe()
-        self.task.official_cmdline = cmdline == get_official_chia_exe()
-        self.task.create_time = datetime.now()
-        self.task.fpk = fpk
-        self.task.ppk = ppk
-        self.task.buckets = buckets
-        self.task.k = k
-        self.task.nobitfield = nobitfield
-        self.task.ssd_folder = ssd_folder
-        if hdd_folder == 'auto':
-            self.task.auto_hdd_folder = True
-        else:
-            self.task.auto_hdd_folder = False
-            self.task.hdd_folder = hdd_folder
-        self.task.temporary_folder = temporary_folder
-        self.task.specify_count = specify_count
-        self.task.count = number
-        self.task.number_of_thread = thread_num
-        self.task.memory_size = memory_size
-        self.task.delay_seconds = delay
+        config['cmdline'] = cmdline
+        config['fpk'] = fpk
+        config['ppk'] = ppk
+        config['buckets'] = buckets
+        config['k'] = k
+        config['specify_count'] = specify_count
+        config['num'] = number
+        config['thread_num'] = thread_num
+        config['memory_size'] = memory_size
 
-        if specify_count:
-            for i in range(number):
-                self.task.sub_tasks.append(PlotSubTask(self.task, i))
+        save_config()
+
+        self.result.clear()
+        if ssd_folder == 'auto':
+            for batch_task in self.batch_tasks:
+                _ssd_folder = batch_task['ssd_folder']
+                _hdd_folder = batch_task['hdd_folder']
+                _memory = batch_task['memory']
+                _thread = batch_task['thread']
+                _delay = batch_task['delay']
+
+                task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, buckets=buckets, k=k, nobitfield=nobitfield,
+                                        ssd_folder=_ssd_folder, hdd_folder=_hdd_folder, specify_count=False,
+                                        count=1, thread_num=_thread, memory_size=_memory, delay=_delay)
+                if task:
+                    self.result = [task]
         else:
-            self.task.sub_tasks.append(PlotSubTask(self.task, 0))
+            task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, buckets=buckets, k=k, nobitfield=nobitfield,
+                                    ssd_folder=ssd_folder, hdd_folder=hdd_folder, specify_count=specify_count,
+                                    count=number, thread_num=thread_num, memory_size=memory_size, delay=delay)
+            if task:
+                self.result = [task]
+
+        if not self.result:
+            return
 
         super().accept()
+
+    def create_task(self, cmdline, fpk, ppk, buckets, k, nobitfield, ssd_folder, hdd_folder, specify_count, count,
+                    thread_num, memory_size, delay) -> Optional[PlotTask]:
+        temporary_folder = os.path.join(ssd_folder, make_name(12))
+        temporary_folder = temporary_folder.replace('\\', '/')
+
+        try:
+            os.mkdir(temporary_folder)
+        except:
+            QMessageBox.information(self, '提示', '创建临时目录失败 %s' % temporary_folder)
+            return None
+
+        task = PlotTask()
+
+        task.cmdline = cmdline
+        task.inner_cmdline = cmdline == self.get_builtin_exe()
+        task.official_cmdline = cmdline == get_official_chia_exe()
+        task.create_time = datetime.now()
+        task.fpk = fpk
+        task.ppk = ppk
+        task.buckets = buckets
+        task.k = k
+        task.nobitfield = nobitfield
+        task.ssd_folder = ssd_folder
+        if hdd_folder == 'auto':
+            task.auto_hdd_folder = True
+        else:
+            task.auto_hdd_folder = False
+            task.hdd_folder = hdd_folder
+        task.temporary_folder = temporary_folder
+        task.specify_count = specify_count
+        task.count = count
+        task.number_of_thread = thread_num
+        task.memory_size = memory_size
+        task.delay_seconds = delay
+
+        if specify_count:
+            for i in range(count):
+                task.sub_tasks.append(PlotSubTask(task, i))
+        else:
+            task.sub_tasks.append(PlotSubTask(task, 0))
+
+        return task

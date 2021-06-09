@@ -10,12 +10,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.tabFoldersWidget.setMainWindow(self)
         self.tabPlotWidget.setMainWindow(self)
-        self.tabMineWidget.setMainWindow(self)
+        self.tabHPoolMineWidget.setMainWindow(self)
+        self.tabHuobiPoolMineWidget.setMainWindow(self)
 
         self.setWindowTitle('ChiaTools - ' + version + (' - ' + beta if beta else ''))
 
     def closeEvent(self, event):
-        if self.tabMineWidget.mine_process:
+        if self.tabHPoolMineWidget.mine_process or self.tabHuobiPoolMineWidget.mine_process:
             QMessageBox.warning(self, '提示', '请先停止挖矿')
             event.ignore()
             return

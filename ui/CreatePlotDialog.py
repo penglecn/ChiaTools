@@ -15,7 +15,7 @@ class Ui_CreatePlotDialog(object):
     def setupUi(self, CreatePlotDialog):
         CreatePlotDialog.setObjectName("CreatePlotDialog")
         CreatePlotDialog.setWindowModality(QtCore.Qt.WindowModal)
-        CreatePlotDialog.resize(500, 725)
+        CreatePlotDialog.resize(507, 645)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)

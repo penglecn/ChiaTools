@@ -64,7 +64,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tabMine">
+      <widget class="QWidget" name="tabHPoolMine">
        <attribute name="title">
         <string>HPool矿池挖矿</string>
        </attribute>
@@ -82,7 +82,32 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="MineWidget" name="tabMineWidget" native="true"/>
+         <widget class="HPoolMineWidget" name="tabHPoolMineWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabHuobiPoolMine">
+       <attribute name="title">
+        <string>火币矿池挖矿</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="HuobiPoolMineWidget" name="tabHuobiPoolMineWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -105,9 +130,15 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>MineWidget</class>
+   <class>HPoolMineWidget</class>
    <extends>QWidget</extends>
-   <header>widgets.MineWidget</header>
+   <header>widgets.HPoolMineWidget</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>HuobiPoolMineWidget</class>
+   <extends>QWidget</extends>
+   <header>widgets.HuobiPoolMineWidget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
