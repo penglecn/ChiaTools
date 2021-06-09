@@ -1,18 +1,15 @@
-from PyQt5.QtWidgets import QWidget, QTreeWidgetItem, QHeaderView, QProgressBar, QMessageBox, QMenu
+from PyQt5.QtWidgets import QWidget, QTreeWidgetItem, QHeaderView, QProgressBar, QMessageBox, QMenu, QFileDialog
 from PyQt5.Qt import QBrush, QColor, QModelIndex, QTimerEvent, QCursor
 from PyQt5.QtCore import Qt
 from ui.PlotWidget import Ui_PlotWidget
 from config import save_config, get_config
-from utils import size_to_str, delta_to_str, seconds_to_str
+from utils import size_to_str, delta_to_str, seconds_to_str, make_name
 from datetime import datetime, timedelta
-from core.plot import PlotTask, PlotSubTask, PlotWorker
+from core.plot import PlotTask, PlotSubTask
 from CreatePlotDialog import CreatePlotDialog
 from TaskOutputDialog import TaskOutputDialog
 import os
-import pickle
 from subprocess import run
-from core import BASE_DIR
-import threading
 import platform
 from core.plot import PlotTaskManager
 
@@ -163,6 +160,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         action_reduce_number = None
         action_start_immediately = None
         action_clear_finished = None
+        action_export_log = None
 
         if root_item and (task.specify_count and task.count > 1):
             action_detail.setDisabled(True)
@@ -219,6 +217,13 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
                 action_delete = menu.addAction(u"删除")
 
+        if sub_task_item and sub_task.finish:
+            menu.addSeparator()
+            action_export_log = menu.addAction(u"导出日志")
+        elif not sub_task_item and task.finish:
+            menu.addSeparator()
+            action_export_log = menu.addAction(u"导出所有日志")
+
         if os.path.exists(task.temporary_folder) and platform.system() == 'Windows':
             menu.addSeparator()
             action_locate_temp = menu.addAction(u"浏览临时文件")
@@ -230,6 +235,32 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         if action == action_detail:
             self.showTaskOutput(index)
+        elif action == action_export_log:
+            if sub_task_item and sub_task.finish:
+                log_file = ''
+                if sub_task.plot_file:
+                    log_file = os.path.splitext(os.path.basename(sub_task.plot_file))[0] + '.log'
+                log_file = QFileDialog.getSaveFileName(self, '导出日志', log_file, '日志文件 (*.log *.txt)')[0]
+                if not log_file:
+                    return
+                if not self.exportSubTaskLog(sub_task, log_file=log_file):
+                    QMessageBox.information(self, '提示', f'导出文件失败 {log_file}')
+                    return
+
+            elif not sub_task_item and task.finish:
+                folder = QFileDialog.getExistingDirectory(self, '导出所有日志')
+                if not folder:
+                    return
+                for _sub_task in task.sub_tasks:
+                    if _sub_task.plot_file:
+                        log_name = os.path.splitext(os.path.basename(sub_task.plot_file))[0] + '.log'
+                    else:
+                        log_name = make_name(12) + '.log'
+                    log_file = os.path.join(folder, log_name)
+                    if not self.exportSubTaskLog(_sub_task, log_file=log_file):
+                        QMessageBox.information(self, '提示', f'导出文件失败 {log_file}')
+                        return
+
         elif action == action_modify:
             dlg = CreatePlotDialog(task=task)
             if dlg.exec() == dlg.rejected:
@@ -374,6 +405,19 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         if sub_task_item:
             self.updateSubTaskItem(sub_task_item, sub_task)
 
+    def exportSubTaskLog(self, sub_task: PlotSubTask, log_file):
+        try:
+            f = open(log_file, 'w')
+            if not f:
+                return
+            for log in sub_task.log:
+                f.write(log + '\n')
+            f.close()
+
+            return True
+        except:
+            return False
+
     def onExpanded(self, index: QModelIndex):
         item = self.treePlot.itemFromIndex(index)
         if not item:
@@ -480,11 +524,12 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         if dlg.exec() == dlg.Rejected:
             return
 
-        self.task_manager.add_task(dlg.task)
+        for task in dlg.result:
+            self.task_manager.add_task(task)
 
-        self.addTaskItem(dlg.task)
+            self.addTaskItem(task)
 
-        dlg.task.start()
+            task.start()
 
     def onMakingPlot(self, task: PlotTask, sub_task: PlotSubTask):
         if not task.specify_count:
@@ -501,7 +546,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         if not self.main_window:
             return
 
-        self.main_window.tabMineWidget.restartMine(log)
+        self.main_window.tabHPoolMineWidget.restartMine(log)
 
     def updateTaskStatus(self, task: PlotTask, sub_task: PlotSubTask):
         item = self.getItemFromTask(task)

@@ -39,6 +39,17 @@ def load_config():
     if config is None:
         config = {}
 
+    # update config
+    if 'miner_name' in config:
+        config['hpool_miner_name'] = config['miner_name']
+        del config['miner_name']
+    if 'apikey' in config:
+        config['hpool_apikey'] = config['apikey']
+        del config['apikey']
+    if 'auto_mine' in config:
+        config['hpool_auto_mine'] = config['auto_mine']
+        del config['auto_mine']
+
 
 def save_config():
     global config

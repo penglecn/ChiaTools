@@ -36,7 +36,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
     def setMainWindow(self, win):
         self.main_window = win
 
-        self.main_window.tabMineWidget.updateTotalGB()
+        self.main_window.tabHPoolMineWidget.updateTotalGB()
 
     def loadFolders(self):
         config = get_config()
@@ -106,8 +106,8 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         config['hdd_folders'] = hdd_folders
         save_config()
 
-        self.main_window.tabMineWidget.restartMine()
-        self.main_window.tabMineWidget.updateTotalGB()
+        self.main_window.tabHPoolMineWidget.restartMine()
+        self.main_window.tabHPoolMineWidget.updateTotalGB()
 
     def clickAddSSDFolder(self):
         folder = QFileDialog.getExistingDirectory()
@@ -164,8 +164,8 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         save_config()
 
-        self.main_window.tabMineWidget.restartMine()
-        self.main_window.tabMineWidget.updateTotalGB()
+        self.main_window.tabHPoolMineWidget.restartMine()
+        self.main_window.tabHPoolMineWidget.updateTotalGB()
 
     def clickRemoveHDDFolder(self):
         indexes = self.treeHDD.selectedIndexes()
@@ -189,8 +189,8 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         save_config()
 
-        self.main_window.tabMineWidget.restartMine()
-        self.main_window.tabMineWidget.updateTotalGB()
+        self.main_window.tabHPoolMineWidget.restartMine()
+        self.main_window.tabHPoolMineWidget.updateTotalGB()
 
     def slotDiskOperation(self, name, opt):
         result = opt['result']
