@@ -67,9 +67,6 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
             auto_start = config['huobipool_auto_mine']
 
         if auto_start:
-            idx = self.main_window.tabWidget.indexOf(self.main_window.tabHuobiPoolMine)
-            self.main_window.tabWidget.setCurrentIndex(idx)
-
             self.checkBoxAutoStart.setChecked(True)
             self.startMine()
 
@@ -77,7 +74,7 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
         timer = event.timerId()
 
         if timer == self.timerIdUpdateSpace:
-            self.updateTotalGB()
+            disk_operation.updateMiningPlotTotalInfo()
         elif timer == self.timerIdCheckProcess:
             if not self.mine_process:
                 return
@@ -90,7 +87,7 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
     def slotDiskOperation(self, name, opt):
         result = opt['result']
 
-        if name == 'updateTotalGB':
+        if name == 'updatePlotTotalInfo':
             yesterday_count = result['yesterday_count']
             today_count = result['today_count']
             total_count = result['total_count']
@@ -98,23 +95,6 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
 
             status = f'昨天文件数{yesterday_count}个 今天文件数{today_count}个 总文件数{total_count}个 算力{size_to_str(total_size)}'
             self.labelStatus.setText(status)
-
-    def updateTotalGB(self):
-        config = get_config()
-
-        folders = []
-
-        if 'hdd_folders' in config:
-            for folder_obj in config['hdd_folders']:
-                if not folder_obj['mine']:
-                    continue
-                folder = folder_obj['folder']
-
-                folders.append(folder)
-
-        disk_operation.add_operation('updateTotalGB', {
-            'folders': folders,
-        })
 
     def checkMineLog(self, text):
         if 'The operation completed successfully.' in text:

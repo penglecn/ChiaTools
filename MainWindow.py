@@ -3,6 +3,7 @@ from ui.MainWindow import Ui_MainWindow
 from core.plot import PlotTaskManager
 from version import version, beta
 from core.disk import disk_operation
+from config import save_config, get_config
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -17,7 +18,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tabHPoolMineWidget.setMainWindow(self)
         self.tabHuobiPoolMineWidget.setMainWindow(self)
 
+        config = get_config()
+        if 'current_tab_index' in config:
+            current_tab_index = config['current_tab_index']
+            self.tabWidget.setCurrentIndex(current_tab_index)
+
+        self.tabWidget.currentChanged.connect(self.tabChanged)
+
         self.setWindowTitle('ChiaTools - ' + version + (' - ' + beta if beta else ''))
+
+    def tabChanged(self, index):
+        config = get_config()
+        config['current_tab_index'] = index
 
     def closeEvent(self, event):
         if self.tabHPoolMineWidget.mine_process or self.tabHuobiPoolMineWidget.mine_process:
@@ -31,3 +43,4 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         PlotTaskManager.save_tasks()
+        save_config()

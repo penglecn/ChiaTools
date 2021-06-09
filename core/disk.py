@@ -5,6 +5,7 @@ import psutil
 import os
 from datetime import datetime, timedelta
 from utils.lock import RWlock
+from config import get_config
 
 
 __disk_usage_cache = {}
@@ -46,6 +47,40 @@ class DiskOperation(QThread):
             'opt': opt,
         })
 
+    def updateSSDDriverSpaces(self, folders):
+        self.add_operation('updateSSDDriverSpaces', {
+            'folders': folders,
+        })
+
+    def updateHDDDriverSpaces(self, folders):
+        self.add_operation('updateHDDDriverSpaces', {
+            'folders': folders,
+        })
+
+    def updateTotalSpaces(self, folders):
+        self.add_operation('updateTotalSpaces', {
+            'folders': folders,
+        })
+
+    def updatePlotTotalInfo(self, folders):
+        self.add_operation('updatePlotTotalInfo', {
+            'folders': folders,
+        })
+
+    def updateMiningPlotTotalInfo(self):
+        config = get_config()
+
+        folders = []
+
+        if 'hdd_folders' in config:
+            for folder_obj in config['hdd_folders']:
+                if not folder_obj['mine']:
+                    continue
+                folder = folder_obj['folder']
+                folders.append(folder)
+
+        self.updatePlotTotalInfo(folders)
+
     def run(self):
         while True:
             op = self.queue.get()
@@ -57,8 +92,8 @@ class DiskOperation(QThread):
                 self.run_updateDriverSpaces(opt)
             elif name == 'updateTotalSpaces':
                 self.run_updateTotalSpaces(opt)
-            elif name == 'updateTotalGB':
-                self.run_updateTotalGB(opt)
+            elif name == 'updatePlotTotalInfo':
+                self.run_updatePlotTotalInfo(opt)
 
             self.signalResult.emit(name, opt)
 
@@ -124,7 +159,7 @@ class DiskOperation(QThread):
             },
         }
 
-    def run_updateTotalGB(self, opt):
+    def run_updatePlotTotalInfo(self, opt):
         folders = opt['folders']
 
         total_size = 0

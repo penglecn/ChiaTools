@@ -34,7 +34,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
     def setMainWindow(self, win):
         self.main_window = win
 
-        self.main_window.tabHPoolMineWidget.updateTotalGB()
+        disk_operation.updateMiningPlotTotalInfo()
 
     def loadFolders(self):
         config = get_config()
@@ -104,8 +104,9 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         config['hdd_folders'] = hdd_folders
         save_config()
 
-        self.main_window.tabHPoolMineWidget.restartMine()
-        self.main_window.tabHPoolMineWidget.updateTotalGB()
+        self.restartMine()
+
+        disk_operation.updateMiningPlotTotalInfo()
 
     def clickAddSSDFolder(self):
         folder = QFileDialog.getExistingDirectory()
@@ -162,8 +163,9 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         save_config()
 
-        self.main_window.tabHPoolMineWidget.restartMine()
-        self.main_window.tabHPoolMineWidget.updateTotalGB()
+        self.restartMine()
+
+        disk_operation.updateMiningPlotTotalInfo()
 
     def clickRemoveHDDFolder(self):
         indexes = self.treeHDD.selectedIndexes()
@@ -187,8 +189,16 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         save_config()
 
-        self.main_window.tabHPoolMineWidget.restartMine()
-        self.main_window.tabHPoolMineWidget.updateTotalGB()
+        self.restartMine()
+
+        disk_operation.updateMiningPlotTotalInfo()
+
+    def restartMine(self, log=''):
+        if not self.main_window:
+            return
+
+        self.main_window.tabHPoolMineWidget.restartMine(log)
+        self.main_window.tabHuobiPoolMineWidget.restartMine(log)
 
     def slotDiskOperation(self, name, opt):
         result = opt['result']
@@ -286,9 +296,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             item = self.treeSSD.topLevelItem(i)
             folders.append(item.text(0))
 
-        disk_operation.add_operation('updateSSDDriverSpaces', {
-            'folders': folders,
-        })
+        disk_operation.updateSSDDriverSpaces(folders)
 
     def updateHDDDriverSpaces(self):
         folders = []
@@ -296,9 +304,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             item = self.treeHDD.topLevelItem(i)
             folders.append(item.text(1))
 
-        disk_operation.add_operation('updateHDDDriverSpaces', {
-            'folders': folders,
-        })
+        disk_operation.updateHDDDriverSpaces(folders)
 
     def updateHDDTotalSpaces(self):
         folders = []
@@ -309,6 +315,4 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             folder = item.text(1)
             folders.append(folder)
 
-        disk_operation.add_operation('updateTotalSpaces', {
-            'folders': folders,
-        })
+        disk_operation.updateTotalSpaces(folders)

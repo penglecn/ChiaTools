@@ -41,7 +41,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         self.checkBoxPhase1Limit.stateChanged.connect(self.checkPhase1Limit)
         self.checkBoxTotalLimit.stateChanged.connect(self.checkTotalLimit)
-        self.checkBoxAutoRestartMine.stateChanged.connect(self.checkAutoRestartMine)
+        self.checkBoxNextWhenFullyComplete.stateChanged.connect(self.checkNextWhenFullyComplete)
         self.spinBoxPhase1Count.valueChanged.connect(self.changePhase1LimitCount)
         self.spinBoxTotalCount.valueChanged.connect(self.changeTotalLimitCount)
 
@@ -68,8 +68,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         else:
             config['phase1_limit_count'] = 1
 
-        if 'auto_restart_mine' in config:
-            self.checkBoxAutoRestartMine.setChecked(config['auto_restart_mine'])
+        if 'next_when_fully_complete' in config:
+            self.checkBoxNextWhenFullyComplete.setChecked(config['next_when_fully_complete'])
 
     def load_tasks(self):
         if self.treePlot.topLevelItemCount() == 0:
@@ -86,9 +86,9 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         config['total_limit'] = self.checkBoxTotalLimit.isChecked()
         save_config()
 
-    def checkAutoRestartMine(self, i):
+    def checkNextWhenFullyComplete(self, i):
         config = get_config()
-        config['auto_restart_mine'] = self.checkBoxAutoRestartMine.isChecked()
+        config['next_when_fully_complete'] = self.checkBoxNextWhenFullyComplete.isChecked()
         save_config()
 
     def changePhase1LimitCount(self):
@@ -538,15 +538,14 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 self.addSubTaskItem(item, sub_task)
 
     def onNewPlot(self, task: PlotTask, sub_task: PlotSubTask):
-        config = get_config()
-        if 'auto_restart_mine' in config and config['auto_restart_mine']:
-            self.restartMine('生成了新Plot文件，正在重新挖矿...')
+        pass
 
     def restartMine(self, log=''):
         if not self.main_window:
             return
 
         self.main_window.tabHPoolMineWidget.restartMine(log)
+        self.main_window.tabHuobiPoolMineWidget.restartMine(log)
 
     def updateTaskStatus(self, task: PlotTask, sub_task: PlotSubTask):
         item = self.getItemFromTask(task)
