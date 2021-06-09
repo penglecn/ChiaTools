@@ -8,7 +8,8 @@ a = Analysis(['main.pyw'],
              pathex=['C:\\Users\\peng\\Desktop\\chia-tools'],
              binaries=[],
              datas=[
-                 ('.\\bin\\windows\\miner\\hpool-miner-chia-console.exe', 'bin\\windows\\miner'),
+                 ('.\\bin\\windows\\miner\\hpool\\hpool-miner-chia-console.exe', 'bin\\windows\\miner\\hpool'),
+                 ('.\\bin\\windows\\miner\\huobi\\HuobiPool-Chia-Miner.exe', 'bin\\windows\\miner\\huobi'),
                  ('.\\bin\\windows\\plotter\\ProofOfSpace.exe', 'bin\\windows\\plotter')
              ],
              hiddenimports=[],
