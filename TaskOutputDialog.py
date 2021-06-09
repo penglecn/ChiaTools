@@ -19,7 +19,7 @@ class TaskOutputDialog(QDialog, Ui_TaskOutputDialog):
         self.setWindowTitle('Plot任务: ' + self.task.temporary_folder)
 
         for log in self.sub_task.log:
-            self.edit.append(log)
+            self.edit.append(log.rstrip())
 
         if self.worker:
             self.worker.signalTaskOutput.connect(self.slotOutput)

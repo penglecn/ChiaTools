@@ -16,7 +16,7 @@ from utils.lock import RWlock
 from core.disk import get_disk_usage
 import random
 from utils.chia.pos import get_plot_id_and_memo
-from utils import get_k_size
+from utils import get_k_size, get_k_temp_size, size_to_str
 
 
 class PlotTask(QObject):
@@ -821,11 +821,11 @@ class PlotWorker(QThread):
                 if not line and self.process.poll() is not None:
                     break
 
-                text = line.decode('utf-8', errors='replace')
-                text = text.rstrip()
+                orig_text = line.decode('utf-8', errors='replace')
+                text = orig_text.rstrip()
 
                 if text:
-                    self.sub_task.log.append(text)
+                    self.sub_task.log.append(orig_text)
                     _failed, _finished = self.handleLog(text)
                     if _failed:
                         success = False
