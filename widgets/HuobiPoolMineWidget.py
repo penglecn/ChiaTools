@@ -191,6 +191,9 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
         config = get_config()
 
         auto_start = self.checkBoxAutoStart.isChecked()
+        config['huobipool_auto_mine'] = auto_start
+        save_config()
+
         hpool_auto_start = config['hpool_auto_mine'] if 'hpool_auto_mine' in config else False
 
         setup_auto_launch(auto_start or hpool_auto_start)
