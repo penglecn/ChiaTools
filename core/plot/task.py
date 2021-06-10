@@ -880,7 +880,10 @@ class PlotWorker(QThread):
                 self.sub_task.status = '已手动停止'
             elif not success or not finished:
                 failed = True
-                self.sub_task.status = '失败'
+                if self.sub_task.log and 'bad allocation' in self.sub_task.log[-1]:
+                    self.sub_task.status = '内存不足'
+                else:
+                    self.sub_task.status = '失败'
             elif not self.plot_filename:
                 failed = True
                 self.sub_task.status = '没有plot文件名'
