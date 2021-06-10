@@ -100,21 +100,6 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
         if 'The operation completed successfully.' in text:
             return False
 
-        consume_max = 1000
-
-        if '扫盘' in text:
-            self.restartMine('扫盘异常，重新启动程序')
-            return False
-
-        # if 'new mining info' in text:
-        #     r = re.compile(r'scan consume=(\d*) scan time')
-        #     found = re.findall(r, text)
-        #     if found:
-        #         consume = int(found[0])
-        #         if consume > consume_max:
-        #             self.restartMine(f'扫盘时间{consume}超过{consume_max}')
-        #             return False
-
         return True
 
     def outputMineLog(self, text):

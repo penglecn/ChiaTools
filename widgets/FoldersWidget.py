@@ -284,7 +284,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         item.setText(column, size_to_str(free))
 
         column += 1
-        item.setText(column, f'{plots_info["total_count"]}个')
+        item.setText(column, f'{plots_info["total_count"]}')
 
         column += 1
         progress_bar: QProgressBar = self.treeHDD.itemWidget(item, column)

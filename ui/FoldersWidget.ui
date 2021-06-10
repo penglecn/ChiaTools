@@ -113,7 +113,7 @@
         <item>
          <widget class="QLabel" name="labelHDDUsage">
           <property name="text">
-           <string>    </string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -133,7 +133,7 @@
         <item>
          <widget class="QLabel" name="labelPlotsInfo">
           <property name="text">
-           <string>    </string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -174,7 +174,7 @@
         </column>
         <column>
          <property name="text">
-          <string>Plot数</string>
+          <string>文件数</string>
          </property>
         </column>
         <column>
