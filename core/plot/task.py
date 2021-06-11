@@ -925,8 +925,8 @@ class PlotWorker(QThread):
                 t.cmdline,
                 '-r', f'{t.number_of_thread}',
                 '-u', f'{t.buckets}',
-                '-t', t.temporary_folder,
-                '-2', t.temporary_folder,
+                '-t', t.temporary_folder + '/',
+                '-2', t.temporary_folder + '/',
                 '-f', fpk,
                 '-p', ppk,
             ]
@@ -991,7 +991,8 @@ class PlotWorker(QThread):
                 break
 
             args.append('-d')
-            args.append(self.sub_task.hdd_folder)
+
+            args.append(self.sub_task.hdd_folder + '/')
 
             self.sub_task.begin_time = datetime.now()
             self.sub_task.status = '正在执行'
