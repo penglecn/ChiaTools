@@ -237,6 +237,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if not fpk or not ppk or not cmdline:
             return
 
+        if cmdline == self.get_chia_plot_exe():
+            QMessageBox.information(self, '提示', '使用多线程chia_plot.exe命令行不支持批量创建任务')
+            return
+
         if hdd_folder != 'auto' and not os.path.exists(hdd_folder):
             QMessageBox.information(self, '提示', '最终目录不存在')
             return
@@ -388,6 +392,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboK.setVisible(True)
         self.labelK.setVisible(True)
 
+        self.spinNumber.setVisible(True)
+        self.checkBoxSpecifyCount.setVisible(True)
+
         self.labelTip.setVisible(not auto)
         self.treeWidgetTasks.setVisible(auto)
 
@@ -411,6 +418,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.buttonBox.button(self.buttonBox.Ok).setText('批量创建')
         else:
             self.checkBoxSpecifyCount.setVisible(True)
+            self.spinNumber.setVisible(True)
 
             if not self.modify:
                 self.setWindowTitle('创建任务')
