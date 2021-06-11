@@ -32,7 +32,7 @@
    <item>
     <layout class="QFormLayout" name="formLayout">
      <item row="3" column="0">
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="labelSSD">
        <property name="text">
         <string>临时目录（固态硬盘）</string>
        </property>
@@ -42,7 +42,7 @@
       <widget class="QComboBox" name="comboSSD"/>
      </item>
      <item row="4" column="0">
-      <widget class="QLabel" name="label_5">
+      <widget class="QLabel" name="labelHDD">
        <property name="text">
         <string>最终目录（机械硬盘）</string>
        </property>
@@ -52,14 +52,14 @@
       <widget class="QComboBox" name="comboHDD"/>
      </item>
      <item row="5" column="0">
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="labelFpk">
        <property name="text">
         <string>Farmer Public Key(fpk)</string>
        </property>
       </widget>
      </item>
      <item row="7" column="0">
-      <widget class="QLabel" name="label_3">
+      <widget class="QLabel" name="labelPpk">
        <property name="text">
         <string>Pool Public Key(ppk)</string>
        </property>
@@ -79,7 +79,7 @@
       </widget>
      </item>
      <item row="14" column="0">
-      <widget class="QLabel" name="label_7">
+      <widget class="QLabel" name="labelDelay">
        <property name="text">
         <string>延迟时间</string>
        </property>
@@ -93,7 +93,7 @@
       </widget>
      </item>
      <item row="10" column="0">
-      <widget class="QLabel" name="label_6">
+      <widget class="QLabel" name="labelThreadNum">
        <property name="text">
         <string>线程数</string>
        </property>
@@ -113,7 +113,7 @@
       </widget>
      </item>
      <item row="9" column="0">
-      <widget class="QLabel" name="label_7">
+      <widget class="QLabel" name="labelMemory">
        <property name="text">
         <string>最大内存</string>
        </property>
@@ -146,7 +146,7 @@
       </widget>
      </item>
      <item row="11" column="0">
-      <widget class="QLabel" name="label_4">
+      <widget class="QLabel" name="labelBucketNum">
        <property name="text">
         <string>桶数(Buckets)</string>
        </property>
@@ -166,7 +166,7 @@
       </widget>
      </item>
      <item row="8" column="0">
-      <widget class="QLabel" name="label_8">
+      <widget class="QLabel" name="labelK">
        <property name="text">
         <string>Plot大小(K)</string>
        </property>
@@ -176,7 +176,7 @@
       <widget class="QComboBox" name="comboK"/>
      </item>
      <item row="12" column="0">
-      <widget class="QLabel" name="label_9">
+      <widget class="QLabel" name="labelNoBitfield">
        <property name="text">
         <string>禁止位域(bitfield)</string>
        </property>
@@ -190,7 +190,7 @@
       </widget>
      </item>
      <item row="0" column="0">
-      <widget class="QLabel" name="label_10">
+      <widget class="QLabel" name="labelCmdLine">
        <property name="text">
         <string>P图命令行程序</string>
        </property>

@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QFileDialog
 from core import BASE_DIR, is_debug
 import platform
 from typing import Optional
+from core.plotter import PLOTTER_OFFICIAL, PLOTTER_BUILTIN, PLOTTER_CHIA_PLOT
 
 
 class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
@@ -44,15 +45,18 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboK.addItem('884.1GiB (k=35, 临时文件: 2175GiB)', 35)
         self.comboK.setCurrentIndex(0)
 
-        self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
+        self.comboCmdLine.addItem('使用多线程chia_plot.exe', self.get_chia_plot_exe())
         self.comboCmdLine.setCurrentIndex(0)
+
+        self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
+        self.comboCmdLine.setCurrentIndex(1)
 
         chia_exe = get_official_chia_exe()
         if chia_exe:
             self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
             self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
 
-        self.comboCmdLine.addItem('手动选择', 'select')
+        # self.comboCmdLine.addItem('手动选择', 'select')
         self.comboCmdLine.currentIndexChanged.connect(self.change_cmdline)
         self.change_cmdline()
 
@@ -194,7 +198,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if 'cmdline' in config:
                 select_cmdline(config['cmdline'])
 
-        self.comboSSD.currentIndexChanged.connect(self.changed_ssd)
+        self.comboSSD.currentIndexChanged.connect(self.update_form_items)
+        self.comboCmdLine.currentIndexChanged.connect(self.update_form_items)
         self.comboHDD.currentIndexChanged.connect(self.update_tip_text)
         self.checkBoxNoBitfield.stateChanged.connect(self.check_nobitfield)
 
@@ -208,7 +213,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.spinBucketNum.valueChanged.connect(self.slot_create_batch_tasks)
         self.spinReservedMemory.valueChanged.connect(self.slot_create_batch_tasks)
 
-        self.changed_ssd()
+        self.update_form_items()
         self.slot_create_batch_tasks()
         self.update_tip_text()
 
@@ -373,27 +378,39 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.treeWidgetTasks.addTopLevelItem(item)
 
-    def changed_ssd(self):
-        ssd = self.comboSSD.currentData()
-        auto = ssd == 'auto'
+    def update_form_items(self):
+        auto = self.comboSSD.currentData(Qt.UserRole) == 'auto'
+        chia_plot = self.comboCmdLine.currentData(Qt.UserRole) == self.get_chia_plot_exe()
+
+        self.checkBoxNoBitfield.setVisible(True)
+        self.labelNoBitfield.setVisible(True)
+
+        self.comboK.setVisible(True)
+        self.labelK.setVisible(True)
 
         self.labelTip.setVisible(not auto)
         self.treeWidgetTasks.setVisible(auto)
 
-        self.spinMemory.setDisabled(auto)
-        self.spinThreadNum.setDisabled(auto)
-        self.timeEditDelay.setDisabled(auto)
-        self.labelReserve.setVisible(auto)
+        self.spinMemory.setVisible(not auto)
+        self.labelMemory.setVisible(not auto)
+
+        self.spinThreadNum.setVisible(not auto)
+        self.labelThreadNum.setVisible(not auto)
+
+        self.timeEditDelay.setVisible(not auto)
+        self.labelDelay.setVisible(not auto)
+
         self.spinReservedMemory.setVisible(auto)
+        self.labelReserve.setVisible(auto)
 
         if auto:
             self.checkBoxSpecifyCount.setCheckState(0)
-            self.checkBoxSpecifyCount.setDisabled(True)
-            self.spinNumber.setDisabled(True)
+            self.checkBoxSpecifyCount.setVisible(False)
+            self.spinNumber.setVisible(False)
             self.setWindowTitle('批量创建任务')
             self.buttonBox.button(self.buttonBox.Ok).setText('批量创建')
         else:
-            self.checkBoxSpecifyCount.setDisabled(False)
+            self.checkBoxSpecifyCount.setVisible(True)
 
             if not self.modify:
                 self.setWindowTitle('创建任务')
@@ -401,6 +418,16 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.batch_tasks.clear()
             self.treeWidgetTasks.clear()
+
+        if chia_plot:
+            self.spinMemory.setVisible(False)
+            self.labelMemory.setVisible(False)
+
+            self.checkBoxNoBitfield.setVisible(False)
+            self.labelNoBitfield.setVisible(False)
+
+            self.comboK.setVisible(False)
+            self.labelK.setVisible(False)
 
         self.adjustSize()
         self.update_tip_text()
@@ -443,6 +470,15 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if is_debug():
             return os.path.join(exe_cwd, 'test.exe')
         return os.path.join(exe_cwd, 'ProofOfSpace.exe')
+
+    def get_chia_plot_exe(self):
+        plat = platform.system()
+        if plat == 'Windows':
+            folder = 'windows'
+        else:
+            return ''
+        exe_cwd = os.path.join(BASE_DIR, 'bin', folder, 'plotter')
+        return os.path.join(exe_cwd, 'chia_plot.exe')
 
     def change_cmdline(self):
         data = self.comboCmdLine.currentData(Qt.UserRole)
@@ -491,8 +527,13 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.task.k = k
         self.task.nobitfield = nobitfield
         self.task.cmdline = cmdline
-        self.task.inner_cmdline = cmdline == self.get_builtin_exe()
-        self.task.official_cmdline = cmdline == get_official_chia_exe()
+
+        if cmdline == self.get_builtin_exe():
+            self.task.plotter_type = PLOTTER_BUILTIN
+        elif cmdline == get_official_chia_exe():
+            self.task.plotter_type = PLOTTER_OFFICIAL
+        elif cmdline == self.get_chia_plot_exe():
+            self.task.plotter_type = PLOTTER_CHIA_PLOT
 
         if self.task.specify_count:
             for sub in self.task.sub_tasks:
@@ -642,8 +683,13 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         task = PlotTask()
 
         task.cmdline = cmdline
-        task.inner_cmdline = cmdline == self.get_builtin_exe()
-        task.official_cmdline = cmdline == get_official_chia_exe()
+        if cmdline == self.get_builtin_exe():
+            task.plotter_type = PLOTTER_BUILTIN
+        elif cmdline == get_official_chia_exe():
+            task.plotter_type = PLOTTER_OFFICIAL
+        elif cmdline == self.get_chia_plot_exe():
+            task.plotter_type = PLOTTER_CHIA_PLOT
+
         task.create_time = datetime.now()
         task.fpk = fpk
         task.ppk = ppk

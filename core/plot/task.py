@@ -17,6 +17,7 @@ from core.disk import get_disk_usage
 import random
 from utils.chia.pos import get_plot_id_and_memo
 from utils import get_k_size, get_k_temp_size, size_to_str
+from core.plotter import PLOTTER_CHIA_PLOT, PLOTTER_BUILTIN, PLOTTER_OFFICIAL
 
 
 class PlotTask(QObject):
@@ -33,8 +34,7 @@ class PlotTask(QObject):
         self.phase = 1
 
         self.cmdline = ''
-        self.inner_cmdline = False
-        self.official_cmdline = False
+        self.plotter_type = 0
         self.fpk = ''
         self.ppk = ''
         self.k = 32
@@ -414,7 +414,7 @@ class PlotWorker(QThread):
             self.task.phase = 2
         elif text.startswith('Backpropagating on table'):
             self.table = text
-            if self.phase == 2 and self.task.official_cmdline:
+            if self.phase == 2 and self.task.plotter_type == PLOTTER_OFFICIAL:
                 if text == 'Backpropagating on table 6':
                     self.sub_task.progress = 29.167
                 if text == 'Backpropagating on table 5':
@@ -596,8 +596,150 @@ class PlotWorker(QThread):
             self.sub_task.progress = 100.0
             self.updateTask()
 
+    def handleChiaPlotLog(self, text):
+        failed = False
+        finished = False
+
+        if text.startswith('Plot Name'):
+            r = re.compile(r'Plot Name: (.*)')
+            found = re.findall(r, text)
+            if found:
+                self.plot_filename = found[0] + '.plot'
+        elif text.startswith('Started copy to'):
+            self.copying = True
+            self.sub_task.status = '生成文件'
+            self.sub_task.progress = 99.0
+            self.task.signalMakingPlot.emit(self.task, self.sub_task)
+            self.updateTask()
+
+            if core.is_debug():
+                time.sleep(10)
+        elif text.startswith('Copy to'):
+            self.sub_task.progress = 100.0
+            self.updateTask()
+            finished = True
+        elif text.startswith('['):
+            if text.startswith('[P1]'):
+                self.phase = self.task.phase = 1
+
+                base_progress = 0
+                max_progress = 25
+                total_bucket = 7
+                r = re.compile(r'Table (.*) took')
+                found = re.findall(r, text)
+                if not found:
+                    return failed, finished
+                bucket = int(found[0])
+            elif text.startswith('[P2]'):
+                self.phase = self.task.phase = 2
+
+                base_progress = 25
+                max_progress = 50
+                total_bucket = 12
+                if 'Table 7 scan' in text:
+                    bucket = 1
+                elif 'Table 7 rewrite' in text:
+                    bucket = 2
+                elif 'Table 6 scan' in text:
+                    bucket = 3
+                elif 'Table 6 rewrite' in text:
+                    bucket = 4
+                elif 'Table 5 scan' in text:
+                    bucket = 5
+                elif 'Table 5 rewrite' in text:
+                    bucket = 6
+                elif 'Table 4 scan' in text:
+                    bucket = 7
+                elif 'Table 4 rewrite' in text:
+                    bucket = 8
+                elif 'Table 3 scan' in text:
+                    bucket = 9
+                elif 'Table 3 rewrite' in text:
+                    bucket = 10
+                elif 'Table 2 scan' in text:
+                    bucket = 11
+                elif 'Table 2 rewrite' in text:
+                    bucket = 12
+                else:
+                    return failed, finished
+            elif text.startswith('[P3-'):
+                self.phase = self.task.phase = 3
+
+                base_progress = 50
+                max_progress = 75
+                total_bucket = 12
+                if '[P3-1]' in text and 'Table 2 took' in text:
+                    bucket = 1
+                elif '[P3-2]' in text and 'Table 2 took' in text:
+                    bucket = 2
+                elif '[P3-1]' in text and 'Table 3 took' in text:
+                    bucket = 3
+                elif '[P3-2]' in text and 'Table 3 took' in text:
+                    bucket = 4
+                elif '[P3-1]' in text and 'Table 4 took' in text:
+                    bucket = 5
+                elif '[P3-2]' in text and 'Table 4 took' in text:
+                    bucket = 6
+                elif '[P3-1]' in text and 'Table 5 took' in text:
+                    bucket = 7
+                elif '[P3-2]' in text and 'Table 5 took' in text:
+                    bucket = 8
+                elif '[P3-1]' in text and 'Table 6 took' in text:
+                    bucket = 9
+                elif '[P3-2]' in text and 'Table 6 took' in text:
+                    bucket = 10
+                elif '[P3-1]' in text and 'Table 7 took' in text:
+                    bucket = 11
+                elif '[P3-2]' in text and 'Table 7 took' in text:
+                    bucket = 12
+                else:
+                    return failed, finished
+            elif text.startswith('[P4]'):
+                self.phase = self.task.phase = 4
+
+                base_progress = 75
+                max_progress = 99
+                total_bucket = 4
+                if 'Starting to write C1 and C3 tables' in text:
+                    bucket = 1
+                elif 'Finished writing C1 and C3 tables' in text:
+                    bucket = 1
+                elif 'Writing C2 table' in text:
+                    bucket = 1
+                elif 'Finished writing C2 table' in text:
+                    bucket = 1
+                else:
+                    return failed, finished
+            else:
+                return failed, finished
+
+            progress = (100*bucket/total_bucket) * (max_progress-base_progress) / 100 + base_progress
+
+            if self.sub_task.progress >= progress:
+                return failed, finished
+
+            self.sub_task.progress = progress
+            self.updateTask()
+        elif text.startswith('Phase 1 took'):
+            self.sub_task.progress = 25
+            self.updateTask()
+        elif text.startswith('Phase 2 took'):
+            self.sub_task.progress = 50
+            self.updateTask()
+        elif text.startswith('Phase 3 took'):
+            self.sub_task.progress = 75
+            self.updateTask()
+        elif text.startswith('Phase 4 took'):
+            self.sub_task.progress = 99
+            self.updateTask()
+
+        return failed, finished
+
     def handleLog(self, text):
         text = text.strip()
+
+        if self.task.plotter_type == PLOTTER_CHIA_PLOT:
+            return self.handleChiaPlotLog(text)
 
         failed = False
         finished = False
@@ -722,17 +864,11 @@ class PlotWorker(QThread):
 
         plot_id, plot_memo = get_plot_id_and_memo(t.fpk, t.ppk)
 
-        if t.inner_cmdline:
+        args = []
+        if t.plotter_type == PLOTTER_BUILTIN:
             dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M")
 
             plot_filename: str = f"plot-k{t.k}-{dt_string}-{plot_id}.plot"
-
-            # ./ProofOfSpace.exe
-            # create
-            # -i 0xa5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2
-            # -m 0xaa7c1994158b12b5062b9c351ee089fecc01f8b67d954b828aa0a5e7f638499ed051efbeb3b80e3f49f5111b2fd375a9b8de193be4ffad16ecae6d092541b2021be062a9268e2828c1fedc8fab2d46e13d0ca6c8beb29b90b7045b5888b417240baf2c890af98538238b2d3c9ee31c6eea54a2ee01ee08d126c5cf264494a3ba
-            # -k 32 -f plot-k32-2021-05-08-22-06-a5f9e256c32db865fb23d5b8117e8c6fcd911b20557fd05ffa10ba5f9586a3f2.plot
-            # -r 16 -u 128 -s 65536 -t N:/temporary/gmdttugmxqkq -2 N:/temporary/gmdttugmxqkq -d F:/chia-final -e false -b 7000 -p false
 
             args = [
                 t.cmdline,
@@ -749,7 +885,10 @@ class PlotWorker(QThread):
                 '-b', f'{t.memory_size}',
                 '-p',
             ]
-        else:
+
+            if t.nobitfield:
+                args.append('-e')
+        elif t.plotter_type == PLOTTER_OFFICIAL:
             fpk = t.fpk
             ppk = t.ppk
             if fpk.startswith('0x'):
@@ -773,8 +912,24 @@ class PlotWorker(QThread):
                 '-b', f'{t.memory_size}',
             ]
 
-        if t.nobitfield:
-            args.append('-e')
+            if t.nobitfield:
+                args.append('-e')
+        elif t.plotter_type == PLOTTER_CHIA_PLOT:
+            fpk = t.fpk
+            ppk = t.ppk
+            if fpk.startswith('0x'):
+                fpk = fpk[2:]
+            if ppk.startswith('0x'):
+                ppk = ppk[2:]
+            args = [
+                t.cmdline,
+                '-r', f'{t.number_of_thread}',
+                '-u', f'{t.buckets}',
+                '-t', t.temporary_folder,
+                '-2', t.temporary_folder,
+                '-f', fpk,
+                '-p', ppk,
+            ]
 
         return args
 
