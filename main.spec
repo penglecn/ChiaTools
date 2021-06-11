@@ -11,6 +11,8 @@ a = Analysis(['main.pyw'],
                  ('.\\bin\\windows\\miner\\hpool\\hpool-miner-chia-console.exe', 'bin\\windows\\miner\\hpool'),
                  ('.\\bin\\windows\\miner\\huobi\\HuobiPool-Chia-Miner.exe', 'bin\\windows\\miner\\huobi'),
                  ('.\\bin\\windows\\plotter\\ProofOfSpace.exe', 'bin\\windows\\plotter')
+                 ('.\\bin\\windows\\plotter\\chia_plot.exe', 'bin\\windows\\plotter')
+                 ('.\\bin\\windows\\plotter\\libsodium.dll', 'bin\\windows\\plotter')
              ],
              hiddenimports=[],
              hookspath=[],
