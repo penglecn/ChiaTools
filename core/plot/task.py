@@ -377,6 +377,8 @@ class PlotWorker(QThread):
                 return p
             if p.name().lower() == 'chia.exe':
                 return p
+            if p.name().lower() == 'chia_plot.exe':
+                return p
 
             ps = p.children()
             for child in ps:
