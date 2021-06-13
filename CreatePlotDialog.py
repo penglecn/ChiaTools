@@ -45,6 +45,12 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboK.addItem('884.1GiB (k=35, 临时文件: 2175GiB)', 35)
         self.comboK.setCurrentIndex(0)
 
+        self.comboBucketNum.addItem('16', 16)
+        self.comboBucketNum.addItem('32', 32)
+        self.comboBucketNum.addItem('64', 64)
+        self.comboBucketNum.addItem('128', 128)
+        self.comboBucketNum.setCurrentIndex(self.comboBucketNum.count()-1)
+
         self.comboCmdLine.addItem('使用多线程chia_plot.exe', self.get_chia_plot_exe())
         self.comboCmdLine.setCurrentIndex(0)
 
@@ -121,7 +127,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.timeEditDelay.setDisabled(True)
 
-            self.spinBucketNum.setValue(task.buckets)
+            self.comboBucketNum.setCurrentText(f'{task.buckets}')
+
             select_k_combo(task.k)
             self.checkBoxNoBitfield.setChecked(task.nobitfield)
             select_cmdline(task.cmdline)
@@ -190,7 +197,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                     self.spinNumber.setDisabled(False)
 
             if 'buckets' in config:
-                self.spinBucketNum.setValue(config['buckets'])
+                self.comboBucketNum.setCurrentText(f"{config['buckets']}")
 
             if 'k' in config:
                 select_k_combo(config['k'])
@@ -210,7 +217,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.editFpk.textChanged.connect(self.slot_create_batch_tasks)
         self.editPpk.textChanged.connect(self.slot_create_batch_tasks)
         self.comboK.currentIndexChanged.connect(self.slot_create_batch_tasks)
-        self.spinBucketNum.valueChanged.connect(self.slot_create_batch_tasks)
+        self.comboBucketNum.currentIndexChanged.connect(self.slot_create_batch_tasks)
         self.spinReservedMemory.valueChanged.connect(self.slot_create_batch_tasks)
 
         self.update_form_items()
@@ -496,6 +503,15 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         else:
             self.lineEditCmdLine.setText(data)
 
+        max_bucket = self.comboBucketNum.itemData(self.comboBucketNum.count() - 1, Qt.UserRole)
+        if data == self.get_chia_plot_exe():
+            if max_bucket != 256:
+                self.comboBucketNum.addItem(f'256', 256)
+                self.comboBucketNum.setCurrentText(f'256')
+        else:
+            if max_bucket == 256:
+                self.comboBucketNum.removeItem(self.comboBucketNum.count() - 1)
+
     def about_public_key(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词。\n如果你已经安装了Chia官方钱包软件并且创建了钱包，fpk和ppk会自动获取。如果没有安装，请使用第三方工具（如：HPool提供的签名软件等）来生成。')
 
@@ -513,7 +529,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     def accept_modify(self):
         thread_num = self.spinThreadNum.value()
         memory_size = self.spinMemory.value()
-        buckets = self.spinBucketNum.value()
+        buckets = self.comboBucketNum.currentData(Qt.UserRole)
         k = int(self.comboK.currentData(Qt.UserRole))
         nobitfield = self.checkBoxNoBitfield.isChecked()
         hdd_folder = self.comboHDD.currentData(Qt.UserRole)
@@ -565,7 +581,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
-        buckets = self.spinBucketNum.value()
+        buckets = self.comboBucketNum.currentData(Qt.UserRole)
         k = int(self.comboK.currentData(Qt.UserRole))
         nobitfield = self.checkBoxNoBitfield.isChecked()
         cmdline = self.lineEditCmdLine.text()

@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>507</width>
-    <height>778</height>
+    <height>841</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -65,7 +65,7 @@
        </property>
       </widget>
      </item>
-     <item row="13" column="1">
+     <item row="14" column="1">
       <widget class="QSpinBox" name="spinNumber">
        <property name="enabled">
         <bool>false</bool>
@@ -78,14 +78,14 @@
        </property>
       </widget>
      </item>
-     <item row="14" column="0">
+     <item row="15" column="0">
       <widget class="QLabel" name="labelDelay">
        <property name="text">
         <string>延迟时间</string>
        </property>
       </widget>
      </item>
-     <item row="14" column="1">
+     <item row="15" column="1">
       <widget class="QTimeEdit" name="timeEditDelay">
        <property name="displayFormat">
         <string>HH:mm:ss</string>
@@ -138,7 +138,7 @@
        </property>
       </widget>
      </item>
-     <item row="13" column="0">
+     <item row="14" column="0">
       <widget class="QCheckBox" name="checkBoxSpecifyCount">
        <property name="text">
         <string>指定数量</string>
@@ -152,19 +152,6 @@
        </property>
       </widget>
      </item>
-     <item row="11" column="1">
-      <widget class="QSpinBox" name="spinBucketNum">
-       <property name="minimum">
-        <number>16</number>
-       </property>
-       <property name="maximum">
-        <number>128</number>
-       </property>
-       <property name="value">
-        <number>128</number>
-       </property>
-      </widget>
-     </item>
      <item row="8" column="0">
       <widget class="QLabel" name="labelK">
        <property name="text">
@@ -175,14 +162,14 @@
      <item row="8" column="1">
       <widget class="QComboBox" name="comboK"/>
      </item>
-     <item row="12" column="0">
+     <item row="13" column="0">
       <widget class="QLabel" name="labelNoBitfield">
        <property name="text">
         <string>禁止位域(bitfield)</string>
        </property>
       </widget>
      </item>
-     <item row="12" column="1">
+     <item row="13" column="1">
       <widget class="QCheckBox" name="checkBoxNoBitfield">
        <property name="text">
         <string>禁止</string>
@@ -238,14 +225,14 @@
        </property>
       </widget>
      </item>
-     <item row="15" column="0">
+     <item row="16" column="0">
       <widget class="QLabel" name="labelReserve">
        <property name="text">
         <string>预留系统内存</string>
        </property>
       </widget>
      </item>
-     <item row="15" column="1">
+     <item row="16" column="1">
       <widget class="QSpinBox" name="spinReservedMemory">
        <property name="suffix">
         <string>MiB</string>
@@ -258,6 +245,13 @@
        </property>
        <property name="singleStep">
         <number>100</number>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="1">
+      <widget class="QComboBox" name="comboBucketNum">
+       <property name="currentText">
+        <string/>
        </property>
       </widget>
      </item>
@@ -335,7 +329,6 @@
   <tabstop>comboK</tabstop>
   <tabstop>spinMemory</tabstop>
   <tabstop>spinThreadNum</tabstop>
-  <tabstop>spinBucketNum</tabstop>
   <tabstop>checkBoxNoBitfield</tabstop>
   <tabstop>checkBoxSpecifyCount</tabstop>
   <tabstop>spinNumber</tabstop>
