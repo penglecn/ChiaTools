@@ -62,10 +62,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
             self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
 
-        # self.comboCmdLine.addItem('手动选择', 'select')
-        self.comboCmdLine.currentIndexChanged.connect(self.change_cmdline)
-        self.change_cmdline()
-
         def select_cmdline(cmdline):
             for i in range(self.comboCmdLine.count()):
                 d = self.comboCmdLine.itemData(i, Qt.UserRole)
@@ -205,6 +201,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if 'cmdline' in config:
                 select_cmdline(config['cmdline'])
 
+        self.comboCmdLine.currentIndexChanged.connect(self.change_cmdline)
+        self.change_cmdline()
+
         self.comboSSD.currentIndexChanged.connect(self.update_form_items)
         self.comboCmdLine.currentIndexChanged.connect(self.update_form_items)
         self.comboHDD.currentIndexChanged.connect(self.update_tip_text)
@@ -223,6 +222,23 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.update_form_items()
         self.slot_create_batch_tasks()
         self.update_tip_text()
+
+    def reload_buckets(self):
+        cmdline = self.comboCmdLine.currentData(Qt.UserRole)
+
+        self.comboBucketNum.clear()
+        if cmdline == self.get_chia_plot_exe():
+            for i in range(4, 16+1):
+                self.comboBucketNum.addItem(f"2^{i}={2 **i}" + (' (默认)' if i == 8 else ''), 2 ** i)
+        else:
+            for i in range(4, 7+1):
+                self.comboBucketNum.addItem(f"2^{i}={2 **i}" + (' (默认)' if i == 7 else ''), 2 ** i)
+
+    def select_buckets(self, buckets=128):
+        for i in range(self.comboBucketNum.count()):
+            if self.comboBucketNum.itemData(i, Qt.UserRole) == buckets:
+                self.comboBucketNum.setCurrentIndex(i)
+                return
 
     def slot_create_batch_tasks(self):
         self.batch_tasks.clear()
@@ -496,21 +512,28 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         return os.path.join(exe_cwd, 'chia_plot.exe')
 
     def change_cmdline(self):
-        data = self.comboCmdLine.currentData(Qt.UserRole)
-        if data == 'select':
+        cmdline = self.comboCmdLine.currentData(Qt.UserRole)
+        if cmdline == 'select':
             chia_exe = QFileDialog.getOpenFileName(self, '选择钱包chia.exe', directory=os.getenv('LOCALAPPDATA'), filter='chia.exe')[0]
             self.lineEditCmdLine.setText(chia_exe)
         else:
-            self.lineEditCmdLine.setText(data)
+            self.lineEditCmdLine.setText(cmdline)
 
-        max_bucket = self.comboBucketNum.itemData(self.comboBucketNum.count() - 1, Qt.UserRole)
-        if data == self.get_chia_plot_exe():
-            if max_bucket != 256:
-                self.comboBucketNum.addItem(f'256', 256)
-                self.comboBucketNum.setCurrentText(f'256')
+        self.reload_buckets()
+
+        if cmdline == self.get_chia_plot_exe():
+            self.select_buckets(256)
         else:
-            if max_bucket == 256:
-                self.comboBucketNum.removeItem(self.comboBucketNum.count() - 1)
+            self.select_buckets(128)
+
+        # max_bucket = self.comboBucketNum.itemData(self.comboBucketNum.count() - 1, Qt.UserRole)
+        # if data == self.get_chia_plot_exe():
+        #     if max_bucket != 256:
+        #         self.comboBucketNum.addItem(f'256', 256)
+        #         self.comboBucketNum.setCurrentText(f'256')
+        # else:
+        #     if max_bucket == 256:
+        #         self.comboBucketNum.removeItem(self.comboBucketNum.count() - 1)
 
     def about_public_key(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词。\n如果你已经安装了Chia官方钱包软件并且创建了钱包，fpk和ppk会自动获取。如果没有安装，请使用第三方工具（如：HPool提供的签名软件等）来生成。')
