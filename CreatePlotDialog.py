@@ -18,6 +18,7 @@ from core.plotter import PLOTTER_OFFICIAL, PLOTTER_BUILTIN, PLOTTER_CHIA_PLOT
 class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     last_ssd_folder = ''
     last_hdd_folder = ''
+    selected_temp2_folders = []
 
     def __init__(self, task: Optional[PlotTask] = None, auto=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -70,6 +71,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if 'chia_plot_buckets' in config:
             self.current_chia_plot_buckets = config['chia_plot_buckets']
 
+        self.load_temp2()
+        self.checkBoxSpecifyTemp2.stateChanged.connect(self.slot_check_temp2)
+        self.comboTemp2.setDisabled(True)
+
         def select_cmdline(cmdline):
             for i in range(self.comboCmdLine.count()):
                 d = self.comboCmdLine.itemData(i, Qt.UserRole)
@@ -102,12 +107,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.comboHDD.addItem('自动', 'auto')
             for hdd_folder_obj in config['hdd_folders']:
                 folder = hdd_folder_obj['folder']
-                text = folder
-                if os.path.exists(folder):
-                    usage = get_disk_usage(folder)
-                    text += f" ({size_to_str(usage.free)}空闲)"
-                else:
-                    text += " (不存在)"
+                text = self.get_folder_display_text(folder)
                 if folder == task.hdd_folder:
                     current_index = self.comboHDD.count()
                 self.comboHDD.addItem(text, folder)
@@ -140,6 +140,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.checkBoxNoBitfield.setChecked(task.nobitfield)
             select_cmdline(task.cmdline)
 
+            if task.temporary2_folder:
+                self.checkBoxSpecifyTemp2.setChecked(True)
+                self.select_temp2(task.temporary2_folder)
+
             self.setWindowTitle('编辑P图任务')
 
             self.buttonBox.button(self.buttonBox.Ok).setText('修改')
@@ -149,12 +153,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if not auto:
                 current_index = 1
             for ssd_folder in config['ssd_folders']:
-                text = ssd_folder
-                if os.path.exists(ssd_folder):
-                    usage = get_disk_usage(ssd_folder)
-                    text += f" ({size_to_str(usage.free)}空闲)"
-                else:
-                    text += " (不存在)"
+                text = self.get_folder_display_text(ssd_folder)
                 if not auto and ssd_folder == CreatePlotDialog.last_ssd_folder:
                     current_index = self.comboSSD.count()
                 self.comboSSD.addItem(text, ssd_folder)
@@ -164,12 +163,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.comboHDD.addItem('自动', 'auto')
             for hdd_folder_obj in config['hdd_folders']:
                 folder = hdd_folder_obj['folder']
-                text = folder
-                if os.path.exists(folder):
-                    usage = get_disk_usage(folder)
-                    text += f" ({size_to_str(usage.free)}空闲)"
-                else:
-                    text += " (不存在)"
+                text = self.get_folder_display_text(folder)
                 if folder == CreatePlotDialog.last_hdd_folder:
                     current_index = self.comboHDD.count()
                 self.comboHDD.addItem(text, folder)
@@ -209,6 +203,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if 'cmdline' in config:
                 select_cmdline(config['cmdline'])
 
+        self.comboTemp2.currentIndexChanged.connect(self.slot_change_temp2)
+        self.comboBucketNum.currentIndexChanged.connect(self.slot_change_buckets)
         self.comboCmdLine.currentIndexChanged.connect(self.change_cmdline)
         self.change_cmdline()
 
@@ -231,6 +227,43 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.slot_create_batch_tasks()
         self.update_tip_text()
 
+    def get_folder_display_text(self, folder):
+        text = folder
+        if os.path.exists(folder):
+            usage = get_disk_usage(folder)
+            text += f" ({size_to_str(usage.free)}空闲)"
+        else:
+            text += " (不存在)"
+        return text
+
+    def load_temp2(self):
+        config = get_config()
+
+        self.comboTemp2.addItem('', '')
+
+        for ssd_folder in config['ssd_folders']:
+            self.comboTemp2.addItem(self.get_folder_display_text(ssd_folder), ssd_folder)
+
+        for hdd_folder_obj in config['hdd_folders']:
+            folder = hdd_folder_obj['folder']
+            self.comboTemp2.addItem(self.get_folder_display_text(folder), folder)
+
+        self.comboTemp2.addItem('手动选择', 'select')
+
+        for selected_folder in CreatePlotDialog.selected_temp2_folders:
+            self.comboTemp2.addItem(self.get_folder_display_text(selected_folder), selected_folder)
+
+        self.select_temp2('')
+
+    def select_temp2(self, folder):
+        for i in range(self.comboTemp2.count()):
+            if self.comboTemp2.itemData(i, Qt.UserRole) == folder:
+                self.comboTemp2.setCurrentIndex(i)
+                return
+
+        self.comboTemp2.addItem(self.get_folder_display_text(folder), folder)
+        self.comboTemp2.setCurrentIndex(self.comboTemp2.count() - 1)
+
     def reload_buckets(self):
         self.comboBucketNum.currentIndexChanged.disconnect(self.slot_change_buckets)
         cmdline = self.comboCmdLine.currentData(Qt.UserRole)
@@ -250,6 +283,15 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if self.comboBucketNum.itemData(i, Qt.UserRole) == buckets:
                 self.comboBucketNum.setCurrentIndex(i)
                 return
+
+    def slot_check_temp2(self):
+        checked = self.checkBoxSpecifyTemp2.isChecked()
+        self.comboTemp2.setDisabled(not checked)
+
+    def slot_change_temp2(self):
+        if self.comboTemp2.currentData(Qt.UserRole) == 'select':
+            temp2_folder = QFileDialog.getExistingDirectory(self, '选择目录')
+            self.select_temp2(temp2_folder)
 
     def slot_change_buckets(self):
         buckets = self.comboBucketNum.currentData(Qt.UserRole)
@@ -570,9 +612,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         hdd_folder = self.comboHDD.currentData(Qt.UserRole)
         cmdline = self.lineEditCmdLine.text()
 
-        if not cmdline:
-            QMessageBox.information(self, '提示', '请选择程序')
-            return
+        if self.checkBoxSpecifyTemp2.isChecked():
+            temp2_folder = self.comboTemp2.currentData(Qt.UserRole)
+        else:
+            temp2_folder = ''
 
         if hdd_folder == 'auto':
             self.task.auto_hdd_folder = True
@@ -586,6 +629,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.task.k = k
         self.task.nobitfield = nobitfield
         self.task.cmdline = cmdline
+        self.task.temporary2_folder = temp2_folder
 
         if cmdline == self.get_builtin_exe():
             self.task.plotter_type = PLOTTER_BUILTIN
@@ -610,10 +654,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         return
 
     def accept(self) -> None:
-        if self.modify:
-            self.accept_modify()
-            return
-
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
         buckets = self.comboBucketNum.currentData(Qt.UserRole)
@@ -637,6 +677,25 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         if not cmdline:
             QMessageBox.information(self, '提示', '请选择命令行程序')
+            return
+
+        if self.checkBoxSpecifyTemp2.isChecked():
+            temp2_folder = self.comboTemp2.currentData(Qt.UserRole)
+
+            if not temp2_folder:
+                QMessageBox.information(self, '提示', '请选择第二临时目录')
+                return
+            if not os.path.exists(temp2_folder):
+                QMessageBox.information(self, '提示', '第二临时目录不存在')
+                return
+
+            if temp2_folder not in CreatePlotDialog.selected_temp2_folders:
+                CreatePlotDialog.selected_temp2_folders.append(temp2_folder)
+        else:
+            temp2_folder = ''
+
+        if self.modify:
+            self.accept_modify()
             return
 
         if ssd_folder != 'auto' and not os.path.exists(ssd_folder):
@@ -716,14 +775,16 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 _memory = _memory // 1024 // 1024
 
                 task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, buckets=buckets, k=k, nobitfield=nobitfield,
-                                        ssd_folder=_ssd_folder, hdd_folder=_hdd_folder, specify_count=False,
-                                        count=1, thread_num=_thread, memory_size=_memory, delay=_delay)
+                                        ssd_folder=_ssd_folder, hdd_folder=_hdd_folder, temp2_folder=temp2_folder,
+                                        specify_count=False,count=1, thread_num=_thread, memory_size=_memory,
+                                        delay=_delay)
                 if task:
                     self.result.append(task)
         else:
             task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, buckets=buckets, k=k, nobitfield=nobitfield,
-                                    ssd_folder=ssd_folder, hdd_folder=hdd_folder, specify_count=specify_count,
-                                    count=number, thread_num=thread_num, memory_size=memory_size, delay=delay)
+                                    ssd_folder=ssd_folder, hdd_folder=hdd_folder, temp2_folder=temp2_folder,
+                                    specify_count=specify_count, count=number, thread_num=thread_num,
+                                    memory_size=memory_size, delay=delay)
             if task:
                 self.result = [task]
 
@@ -732,7 +793,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         super().accept()
 
-    def create_task(self, cmdline, fpk, ppk, buckets, k, nobitfield, ssd_folder, hdd_folder, specify_count, count,
+    def create_task(self, cmdline, fpk, ppk, buckets, k, nobitfield, ssd_folder, hdd_folder, temp2_folder, specify_count, count,
                     thread_num, memory_size, delay) -> Optional[PlotTask]:
         temporary_folder = os.path.join(ssd_folder, make_name(12))
         temporary_folder = temporary_folder.replace('\\', '/')
@@ -742,6 +803,16 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         except:
             QMessageBox.information(self, '提示', '创建临时目录失败 %s' % temporary_folder)
             return None
+
+        if temp2_folder:
+            temp2_folder = os.path.join(temp2_folder, make_name(12))
+            temp2_folder = temp2_folder.replace('\\', '/')
+
+            try:
+                os.mkdir(temp2_folder)
+            except:
+                QMessageBox.information(self, '提示', '创建第二临时目录失败 %s' % temp2_folder)
+                return None
 
         task = PlotTask()
 
@@ -766,6 +837,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             task.auto_hdd_folder = False
             task.hdd_folder = hdd_folder
         task.temporary_folder = temporary_folder
+        task.temporary2_folder = temp2_folder
         task.specify_count = specify_count
         task.count = count
         task.number_of_thread = thread_num

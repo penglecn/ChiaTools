@@ -44,6 +44,7 @@ class PlotTask(QObject):
         self.hdd_folder = ''
         self.auto_hdd_folder = False
         self.temporary_folder = ''
+        self.temporary2_folder = ''
         self.number_of_thread = 0
         self.memory_size = 0
         self.delay_seconds = 0
@@ -237,9 +238,12 @@ class PlotTask(QObject):
         return int(remain)
 
     def get_temp_plot_size(self):
+        folder = self.temporary_folder
+        if self.temporary2_folder:
+            folder = self.temporary2_folder
         try:
-            for file in os.listdir(self.temporary_folder):
-                full = os.path.join(self.temporary_folder, file)
+            for file in os.listdir(folder):
+                full = os.path.join(folder, file)
                 if not os.path.isfile(full):
                     continue
                 if full.endswith('.plot.2.tmp'):
@@ -253,8 +257,15 @@ class PlotTask(QObject):
         total_size = 0
         temp_plot_size = 0
         try:
+            files = []
             for file in os.listdir(self.temporary_folder):
-                full = os.path.join(self.temporary_folder, file)
+                files.append(os.path.join(self.temporary_folder, file))
+
+            if self.temporary2_folder and self.temporary2_folder != self.temporary_folder:
+                for file in os.listdir(self.temporary2_folder):
+                    files.append(os.path.join(self.temporary2_folder, file))
+
+            for full in files:
                 if not os.path.isfile(full):
                     continue
                 if full.endswith('.plot.2.tmp'):
@@ -279,6 +290,8 @@ class PlotTask(QObject):
     def remove_temp_folder(self):
         try:
             shutil.rmtree(self.temporary_folder)
+            if self.temporary2_folder and os.path.exists(self.temporary2_folder):
+                shutil.rmtree(self.temporary2_folder)
         except:
             return False
         return True
@@ -866,6 +879,10 @@ class PlotWorker(QThread):
 
         plot_id, plot_memo = get_plot_id_and_memo(t.fpk, t.ppk)
 
+        temp2_folder = t.temporary2_folder
+        if not temp2_folder:
+            temp2_folder = t.temporary_folder
+
         args = []
         if t.plotter_type == PLOTTER_BUILTIN:
             dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M")
@@ -883,7 +900,7 @@ class PlotWorker(QThread):
                 '-u', f'{t.buckets}',
                 '-s', '65536',
                 '-t', t.temporary_folder,
-                '-2', t.temporary_folder,
+                '-2', temp2_folder,
                 '-b', f'{t.memory_size}',
                 '-p',
             ]
@@ -910,7 +927,7 @@ class PlotWorker(QThread):
                 '-r', f'{t.number_of_thread}',
                 '-u', f'{t.buckets}',
                 '-t', t.temporary_folder,
-                '-2', t.temporary_folder,
+                '-2', temp2_folder,
                 '-b', f'{t.memory_size}',
             ]
 
@@ -928,7 +945,7 @@ class PlotWorker(QThread):
                 '-r', f'{t.number_of_thread}',
                 '-u', f'{t.buckets}',
                 '-t', t.temporary_folder + '/',
-                '-2', t.temporary_folder + '/',
+                '-2', temp2_folder + '/',
                 '-f', fpk,
                 '-p', ppk,
             ]

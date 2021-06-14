@@ -157,6 +157,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         action_resume = None
         action_next_stop = None
         action_locate_temp = None
+        action_locate_temp2 = None
         action_clean_temp = None
         action_increase_number = None
         action_reduce_number = None
@@ -185,7 +186,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     if task.pending_count():
                         action_reduce_number = menu.addAction(u"减少数量")
                 else:
-                    action_next_stop = menu.addAction(u"下个任务停止")
+                    action_next_stop = menu.addAction(u"下一轮任务停止")
                     action_next_stop.setCheckable(True)
                     action_next_stop.setChecked(task.next_stop)
 
@@ -229,6 +230,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         if os.path.exists(task.temporary_folder) and platform.system() == 'Windows':
             menu.addSeparator()
             action_locate_temp = menu.addAction(u"浏览临时文件")
+            if task.temporary2_folder:
+                action_locate_temp2 = menu.addAction(u"浏览第二临时文件")
 
         action = menu.exec(QCursor.pos())
 
@@ -299,10 +302,6 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     if _sub_item:
                         item.removeChild(_sub_item)
                     task.remove_sub_task(sub)
-
-            # getSubItemFromSubTask
-            # for i in range(item.childCount()):
-            #     _sub_item = item.child(i)
         elif action == action_stop:
             if QMessageBox.information(self, '提示', "确定要停止任务吗？停止后无法恢复", QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                 return
@@ -370,6 +369,9 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             task.next_stop = not task.next_stop
         elif action == action_locate_temp:
             folder = task.temporary_folder.replace('/', '\\')
+            run('explorer /select, ' + folder)
+        elif action == action_locate_temp2:
+            folder = task.temporary2_folder.replace('/', '\\')
             run('explorer /select, ' + folder)
         elif action == action_clean_temp:
             all_files, total_size, temp_plot_size = task.get_temp_files()

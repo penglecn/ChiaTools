@@ -100,7 +100,7 @@
      <item>
       <widget class="QCheckBox" name="checkBoxNextWhenFullyComplete">
        <property name="text">
-        <string>等待任务100%后再执行下一个</string>
+        <string>等待任务100%后再执行下一轮</string>
        </property>
       </widget>
      </item>

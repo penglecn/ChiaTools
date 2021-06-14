@@ -68,6 +68,6 @@ class Ui_PlotWidget(object):
         self.spinBoxPhase1Count.setSuffix(_translate("PlotWidget", "个"))
         self.checkBoxTotalLimit.setText(_translate("PlotWidget", "限制总并发数量"))
         self.spinBoxTotalCount.setSuffix(_translate("PlotWidget", "个"))
-        self.checkBoxNextWhenFullyComplete.setText(_translate("PlotWidget", "等待任务100%后再执行下一个"))
+        self.checkBoxNextWhenFullyComplete.setText(_translate("PlotWidget", "等待任务100%后再执行下一轮"))
         self.buttonCreateBatchPlots.setText(_translate("PlotWidget", "批量创建任务"))
         self.buttonCreatePlot.setText(_translate("PlotWidget", "创建任务"))
