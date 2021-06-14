@@ -26,6 +26,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.result = []
         self.task = None
         self.batch_tasks = []
+        self.current_buckets = 128
+        self.current_chia_plot_buckets = 256
 
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
@@ -61,6 +63,12 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if chia_exe:
             self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
             self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
+
+        if 'buckets' in config:
+            self.current_buckets = config['buckets']
+
+        if 'chia_plot_buckets' in config:
+            self.current_chia_plot_buckets = config['chia_plot_buckets']
 
         def select_cmdline(cmdline):
             for i in range(self.comboCmdLine.count()):
@@ -123,7 +131,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.timeEditDelay.setDisabled(True)
 
-            self.comboBucketNum.setCurrentText(f'{task.buckets}')
+            if task.cmdline == self.get_chia_plot_exe():
+                self.current_chia_plot_buckets = task.buckets
+            else:
+                self.current_buckets = task.buckets
 
             select_k_combo(task.k)
             self.checkBoxNoBitfield.setChecked(task.nobitfield)
@@ -192,9 +203,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 if config['specify_count']:
                     self.spinNumber.setDisabled(False)
 
-            if 'buckets' in config:
-                self.comboBucketNum.setCurrentText(f"{config['buckets']}")
-
             if 'k' in config:
                 select_k_combo(config['k'])
 
@@ -224,6 +232,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.update_tip_text()
 
     def reload_buckets(self):
+        self.comboBucketNum.currentIndexChanged.disconnect(self.slot_change_buckets)
         cmdline = self.comboCmdLine.currentData(Qt.UserRole)
 
         self.comboBucketNum.clear()
@@ -234,11 +243,23 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             for i in range(4, 7+1):
                 self.comboBucketNum.addItem(f"2^{i}={2 **i}" + (' (默认)' if i == 7 else ''), 2 ** i)
 
+        self.comboBucketNum.currentIndexChanged.connect(self.slot_change_buckets)
+
     def select_buckets(self, buckets=128):
         for i in range(self.comboBucketNum.count()):
             if self.comboBucketNum.itemData(i, Qt.UserRole) == buckets:
                 self.comboBucketNum.setCurrentIndex(i)
                 return
+
+    def slot_change_buckets(self):
+        buckets = self.comboBucketNum.currentData(Qt.UserRole)
+        if buckets is None:
+            return
+
+        if self.comboCmdLine.currentData(Qt.UserRole) == self.get_chia_plot_exe():
+            self.current_chia_plot_buckets = buckets
+        else:
+            self.current_buckets = buckets
 
     def slot_create_batch_tasks(self):
         self.batch_tasks.clear()
@@ -522,18 +543,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.reload_buckets()
 
         if cmdline == self.get_chia_plot_exe():
-            self.select_buckets(256)
+            self.select_buckets(self.current_chia_plot_buckets)
         else:
-            self.select_buckets(128)
-
-        # max_bucket = self.comboBucketNum.itemData(self.comboBucketNum.count() - 1, Qt.UserRole)
-        # if data == self.get_chia_plot_exe():
-        #     if max_bucket != 256:
-        #         self.comboBucketNum.addItem(f'256', 256)
-        #         self.comboBucketNum.setCurrentText(f'256')
-        # else:
-        #     if max_bucket == 256:
-        #         self.comboBucketNum.removeItem(self.comboBucketNum.count() - 1)
+            self.select_buckets(self.current_buckets)
 
     def about_public_key(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词。\n如果你已经安装了Chia官方钱包软件并且创建了钱包，fpk和ppk会自动获取。如果没有安装，请使用第三方工具（如：HPool提供的签名软件等）来生成。')
@@ -679,7 +691,11 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         config['cmdline'] = cmdline
         config['fpk'] = fpk
         config['ppk'] = ppk
-        config['buckets'] = buckets
+
+        if cmdline == self.get_chia_plot_exe():
+            config['chia_plot_buckets'] = buckets
+        else:
+            config['buckets'] = buckets
         config['k'] = k
         config['specify_count'] = specify_count
         config['num'] = number
