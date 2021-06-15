@@ -58,6 +58,16 @@ class Ui_MainWindow(object):
         self.tabHuobiPoolMineWidget.setObjectName("tabHuobiPoolMineWidget")
         self.verticalLayout_3.addWidget(self.tabHuobiPoolMineWidget)
         self.tabWidget.addTab(self.tabHuobiPoolMine, "")
+        self.tabAbout = QtWidgets.QWidget()
+        self.tabAbout.setObjectName("tabAbout")
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.tabAbout)
+        self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_4.setSpacing(0)
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.tabAboutWidget = AboutWidget(self.tabAbout)
+        self.tabAboutWidget.setObjectName("tabAboutWidget")
+        self.verticalLayout_4.addWidget(self.tabAboutWidget)
+        self.tabWidget.addTab(self.tabAbout, "")
         self.verticalLayout.addWidget(self.tabWidget)
         MainWindow.setCentralWidget(self.centralwidget)
 
@@ -72,6 +82,8 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabPlot), _translate("MainWindow", "P图任务"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHPoolMine), _translate("MainWindow", "HPool矿池挖矿"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHuobiPoolMine), _translate("MainWindow", "火币矿池挖矿"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabAbout), _translate("MainWindow", "关于"))
+from widgets.AboutWidget import AboutWidget
 from widgets.FoldersWidget import FoldersWidget
 from widgets.HPoolMineWidget import HPoolMineWidget
 from widgets.HuobiPoolMineWidget import HuobiPoolMineWidget

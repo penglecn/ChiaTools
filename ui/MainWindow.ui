@@ -111,6 +111,31 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tabAbout">
+       <attribute name="title">
+        <string>关于</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="AboutWidget" name="tabAboutWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -139,6 +164,12 @@
    <class>HuobiPoolMineWidget</class>
    <extends>QWidget</extends>
    <header>widgets.HuobiPoolMineWidget</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>AboutWidget</class>
+   <extends>QWidget</extends>
+   <header>widgets.AboutWidget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
