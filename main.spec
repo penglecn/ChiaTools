@@ -1,5 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+import sys
+
+root = os.path.dirname('.')
+sys.path.append(root)
+
+import version as v
 
 block_cipher = None
 
@@ -8,6 +15,14 @@ a = Analysis(['main.pyw'],
              pathex=['C:\\Users\\peng\\Desktop\\chia-tools'],
              binaries=[],
              datas=[
+                 ('.\\venv\\Lib\\site-packages\\mpir_skylake_avx.dll', '.'),
+                 ('.\\venv\\Lib\\site-packages\\mpir_broadwell.dll', '.'),
+                 ('.\\venv\\Lib\\site-packages\\mpir_broadwell_avx.dll', '.'),
+                 ('.\\venv\\Lib\\site-packages\\mpir_bulldozer.dll', '.'),
+                 ('.\\venv\\Lib\\site-packages\\mpir_gc.dll', '.'),
+                 ('.\\venv\\Lib\\site-packages\\mpir_haswell.dll', '.'),
+                 ('.\\venv\\Lib\\site-packages\\mpir_piledriver.dll', '.'),
+                 ('.\\venv\\Lib\\site-packages\\mpir_sandybridge.dll', '.'),
                  ('.\\bin\\windows\\miner\\hpool\\hpool-miner-chia-console.exe', 'bin\\windows\\miner\\hpool'),
                  ('.\\bin\\windows\\miner\\huobi\\HuobiPool-Chia-Miner.exe', 'bin\\windows\\miner\\huobi'),
                  ('.\\bin\\windows\\plotter\\ProofOfSpace.exe', 'bin\\windows\\plotter'),
@@ -42,4 +57,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='ChiaTools')
+               name='ChiaTools-windows-' + v.version + ('-' + v.beta if v.beta else ''))
