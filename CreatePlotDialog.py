@@ -58,12 +58,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboCmdLine.setCurrentIndex(0)
 
         self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
-        self.comboCmdLine.setCurrentIndex(1)
 
         chia_exe = get_official_chia_exe()
         if chia_exe:
             self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
-            self.comboCmdLine.setCurrentIndex(self.comboCmdLine.count()-1)
 
         if 'buckets' in config:
             self.current_buckets = config['buckets']
