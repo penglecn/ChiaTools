@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QMainWindow, QFileDialog, QTreeWidget, QTreeWidgetItem, QHeaderView, QProgressBar, \
-    QMessageBox, QMenu, QCheckBox, QTreeWidgetItemIterator
+    QMessageBox, QMenu, QCheckBox, QTreeWidgetItemIterator, QHBoxLayout
 from PyQt5.Qt import pyqtSignal, QBrush, QColor, QModelIndex, QTimerEvent, QCursor
 from PyQt5.QtCore import Qt
 from ui.FoldersWidget import Ui_FoldersWidget
@@ -82,10 +82,18 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         item.setText(1, folder)
         self.treeHDD.addTopLevelItem(item)
 
+        widget = QWidget()
+        layout = QHBoxLayout()
         checkbox = QCheckBox()
         checkbox.setChecked(checked)
         checkbox.stateChanged.connect(self.saveHDDFolderChecks)
-        self.treeHDD.setItemWidget(item, 0, checkbox)
+        layout.addWidget(checkbox)
+        layout.setAlignment(checkbox, Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+        widget.setLayout(layout)
+
+        item.setData(0, Qt.UserRole, checkbox)
+        self.treeHDD.setItemWidget(item, 0, widget)
         self.treeHDD.setItemWidget(item, 6, QProgressBar())
 
         self.updateHDDSpaces()
@@ -94,7 +102,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         hdd_folders = []
         for i in range(self.treeHDD.topLevelItemCount()):
             item = self.treeHDD.topLevelItem(i)
-            checkbox: QCheckBox = self.treeHDD.itemWidget(item, 0)
+            checkbox: QCheckBox = item.data(0, Qt.UserRole)
             folder = item.text(1)
             hdd_folders.append({
                 'folder': folder,
