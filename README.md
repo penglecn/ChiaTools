@@ -25,13 +25,13 @@ https://gitee.com/devteamcn/chia-tools/releases
 - P图命令行可自由选择，选择多线程P图程序，内置P图程序，或官方钱包命令行
 ## 软件界面
 ### P图任务
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot04.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot04.png)
 ### 硬盘
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/folder02.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/folder02.png)
 ### 创建P图任务
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create05.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create05.png)
 ### 矿池挖矿
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/mine02.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/mine02.png)
 
 # 手工打包
 - 安装python  
@@ -51,9 +51,9 @@ pip install -r requirements.txt
 首先要配置硬盘，在硬盘界面里，将所有的固态硬盘和机械硬盘分别添加到对应的列表中。
 ## 创建P图任务
 创建单个并发任务
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create08.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create08.png)
 批量创建并发任务
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create07.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create07.png)
 
 ### P图程序
 P图命令行支持三种，多线程chia_plot.exe、内置的ProofOfSpace.exe、官方钱包chia.exe
@@ -118,15 +118,15 @@ C:\Users\Administrator\AppData\Local\chia-blockchain\app-1.1.7\resources\app.asa
 
 当任务没有指定数量
 
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/menu03.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/menu03.png)
 
 当任务指定了数量
 
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/menu04.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/menu04.png)
 ### 查看日志
 查看日志可以查看任务输出的实时日志内容。
 ### 编辑
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/edit02.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/edit02.png)
 编辑任务可以在任务运行过程中修改配置，修改之后会在下个任务执行时生效。
 ### 下一轮任务停止
 当任务没有指定数量，会不停的P下去。此时如果要停止，选择下一轮任务停止，会在当前任务完成后结束。
@@ -144,7 +144,7 @@ C:\Users\Administrator\AppData\Local\chia-blockchain\app-1.1.7\resources\app.asa
 点击后会跳转到该任务的临时文件所在的目录。
 ## P图任务辅助功能
 在P图任务界面的下方，会有任务数量的限制。
-![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot05.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/plot05.png)
 ### 限制阶段1的任务数量
 当创建了多个P图任务，此时只会有指定数量的任务处于阶段1执行，其它任务会处于排队中的状态。
 ### 限制总任务数量
