@@ -248,6 +248,8 @@ class PlotTask(QObject):
                     continue
                 if full.endswith('.plot.2.tmp'):
                     return os.path.getsize(full)
+                elif full.endswith('.plot'):
+                    return os.path.getsize(full)
         except:
             pass
         return 0
@@ -268,7 +270,7 @@ class PlotTask(QObject):
             for full in files:
                 if not os.path.isfile(full):
                     continue
-                if full.endswith('.plot.2.tmp'):
+                if full.endswith('.plot.2.tmp') or full.endswith('.plot'):
                     size = os.path.getsize(full)
                     if size > 2 ** 30 * 100:
                         temp_plot_size = size
