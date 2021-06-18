@@ -5,6 +5,9 @@ ChiaTools是免费的开源软件，同时欢迎各位开发者朋友们一起�
 
 近期发现有人在利用该软件进行着非法牟利。再次提醒，该软件为免费软件，所有类似的收费软件都为非法。
 
+如果你挖矿已经回本，并且该软件帮助你产生了丰厚的收益，请别忘了请作者喝杯咖啡哈！
+[捐赠](#donation)
+
 ## 下载地址
 https://gitee.com/devteamcn/chia-tools/releases
 
@@ -172,3 +175,16 @@ C:\Users\Administrator\AppData\Local\chia-blockchain\app-1.1.7\resources\app.asa
 
 ### 挖矿进程守护
 挖矿程序有时会崩溃，或显示扫盘超时等问题。这时会自动重启挖矿程序以防止离线。
+# <span id="donation">捐赠</span>
+你的支持是我继续开发下去的动力。感谢你对开源软件的支持！
+
+XCH打赏地址
+
+```
+xch18gf3cz4cdhse570weewd7fxxum03xsur2zapjwy57la8t3zvv4aqfy6j99
+```
+
+捐款码
+
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/donation02.jpg)
+![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/donation01.jpg)
