@@ -58,7 +58,7 @@ pip install -r requirements.txt
 
 ![image](https://gitee.com/devteamcn/chia-tools/raw/master/images/create07.png)
 
-### P图程序
+### P图命令行程序
 P图命令行支持三种，多线程chia_plot.exe、内置的ProofOfSpace.exe、官方钱包chia.exe
 #### 多线程chia_plot.exe
 多线程chia_plot.exe是传说可以一小时一张图的命令行程序。至于使用该程序和官方程序P出来的图是什么区别，仍然会有争议，不过目前可以被官方钱包和各矿池识别。
