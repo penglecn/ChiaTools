@@ -175,7 +175,7 @@ C:\Users\Administrator\AppData\Local\chia-blockchain\app-1.1.7\resources\app.asa
 
 ### 挖矿进程守护
 挖矿程序有时会崩溃，或显示扫盘超时等问题。这时会自动重启挖矿程序以防止离线。
-# <span id="donation">捐赠</span>
+# 捐赠
 你的支持是我继续开发下去的动力。感谢你对开源软件的支持！
 
 XCH打赏地址
