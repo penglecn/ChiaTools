@@ -22,19 +22,22 @@ def load_config():
 
     __config_filename = os.path.join(__config_dir, 'config.json')
 
-    if os.path.exists(old_config) and not os.path.exists(__config_filename):
-        if not os.path.exists(__config_dir):
-            os.mkdir(__config_dir)
-        shutil.move(old_config, __config_filename)
+    try:
+        if os.path.exists(old_config) and not os.path.exists(__config_filename):
+            if not os.path.exists(__config_dir):
+                os.mkdir(__config_dir)
+            shutil.move(old_config, __config_filename)
 
-    if not os.path.exists(__config_filename):
-        return
+        if not os.path.exists(__config_filename):
+            return
 
-    cfg_json = open(__config_filename, 'r').read()
-    if not cfg_json:
-        return
+        cfg_json = open(__config_filename, 'r').read()
+        if not cfg_json:
+            return
 
-    config = json.loads(cfg_json)
+        config = json.loads(cfg_json)
+    except:
+        pass
 
     if config is None:
         config = {}
