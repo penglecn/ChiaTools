@@ -216,6 +216,12 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
             QMessageBox.information(self, '提示', 'Access-ID长度是36，请检查')
             return
 
+        if self.main_window.tabHPoolMineWidget.mine_process:
+            if QMessageBox.information(self, '警告',
+                                       f"确定要双挖吗？\n双挖后一旦爆块，矿池将会对你进行永久性封号！",
+                                       QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                return
+
         if not self.generateMineConfig():
             return
 
