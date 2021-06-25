@@ -269,7 +269,7 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
 
         content = f'''access_id: {config['huobipool_access_id']}
 worker_name: {config['huobipool_miner_name']}
-scan_interval: 10
+scan_interval: 600
 plots_dir:
 {paths}
 '''
