@@ -166,6 +166,13 @@ class PlotTask(QObject):
         return False
 
     @property
+    def copying(self):
+        for sub in self.sub_tasks:
+            if sub.working and sub.worker.copying:
+                return True
+        return False
+
+    @property
     def status(self):
         return self.sub_tasks[self.current_task_index].status
 
@@ -1115,9 +1122,14 @@ class PlotTaskManager(QObject):
     tasks = []
     task_lock = RWlock()
 
+    tasks_to_run = []
+    pending_tasks = []
+
     def __init__(self):
         super(PlotTaskManager, self).__init__()
         self.load_tasks()
+
+        self.startTimer(1000)
 
     @property
     def working(self):
@@ -1144,6 +1156,9 @@ class PlotTaskManager(QObject):
 
     @staticmethod
     def is_task_able_to_next(task: PlotTask, except_worker=None):
+        if is_debug():
+            return True
+
         running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
 
         folder = task.hdd_folder
@@ -1178,6 +1193,9 @@ class PlotTaskManager(QObject):
                 running_folder = running_object[1]
                 if running_folder == folder:
                     free -= get_k_size(running_k)
+            if is_debug():
+                available_folders.append(folder)
+                continue
             if free > get_k_size(k):
                 available_folders.append(folder)
 
@@ -1200,7 +1218,13 @@ class PlotTaskManager(QObject):
 
     def remove_task(self, task: PlotTask):
         PlotTaskManager.task_lock.write_acquire()
+
         PlotTaskManager.tasks.remove(task)
+        if task in PlotTaskManager.pending_tasks:
+            PlotTaskManager.pending_tasks.remove(task)
+        if task in PlotTaskManager.tasks_to_run:
+            PlotTaskManager.tasks_to_run.remove(task)
+
         PlotTaskManager.task_lock.write_release()
         PlotTaskManager.save_tasks()
 
@@ -1250,21 +1274,37 @@ class PlotTaskManager(QObject):
         return
 
     @staticmethod
-    def assign_task(task: PlotTask):
-        PlotTaskManager.task_lock.read_acquire()
+    def get_tasks_count_info(lock=True):
+        if lock:
+            PlotTaskManager.task_lock.read_acquire()
 
         config = get_config()
+        next_when_fully_complete = 'next_when_fully_complete' in config and config['next_when_fully_complete']
 
         total_count = 0
         phase1_count = 0
 
         for _task in PlotTaskManager.tasks:
-            if _task == task:
-                continue
             if _task.working:
+                if _task.copying and not next_when_fully_complete:
+                    continue
                 total_count += 1
                 if _task.phase == 1:
                     phase1_count += 1
+
+        if lock:
+            PlotTaskManager.task_lock.read_release()
+
+        return total_count, phase1_count
+
+    def timerEvent(self, QTimerEvent):
+        PlotTaskManager.process_queue()
+
+    @staticmethod
+    def is_limited(lock=True):
+        total_count, phase1_count = PlotTaskManager.get_tasks_count_info(lock=lock)
+
+        config = get_config()
 
         total_limit = 'total_limit' in config and config['total_limit']
         total_limit_count = config['total_limit_count'] if 'total_limit_count' in config else 0
@@ -1272,13 +1312,38 @@ class PlotTaskManager(QObject):
         phase1_limit_count = config['phase1_limit_count'] if 'phase1_limit_count' in config else 0
 
         if total_limit and total_count >= total_limit_count:
-            PlotTaskManager.task_lock.read_release()
-            return False
+            return True
 
         if phase1_limit and phase1_count >= phase1_limit_count:
-            PlotTaskManager.task_lock.read_release()
-            return False
+            return True
 
-        task.running = True
-        PlotTaskManager.task_lock.read_release()
-        return True
+        return False
+
+    @staticmethod
+    def process_queue():
+        if PlotTaskManager.is_limited():
+            return
+
+        PlotTaskManager.task_lock.write_acquire()
+
+        if PlotTaskManager.pending_tasks:
+            task_to_run = PlotTaskManager.pending_tasks[0]
+            PlotTaskManager.pending_tasks.remove(task_to_run)
+            PlotTaskManager.tasks_to_run.append(task_to_run)
+
+        PlotTaskManager.task_lock.write_release()
+
+    @staticmethod
+    def assign_task(task: PlotTask):
+        PlotTaskManager.task_lock.write_acquire()
+
+        if task in PlotTaskManager.tasks_to_run:
+            PlotTaskManager.tasks_to_run.remove(task)
+            PlotTaskManager.task_lock.write_release()
+            return True
+
+        if task not in PlotTaskManager.pending_tasks:
+            PlotTaskManager.pending_tasks.append(task)
+
+        PlotTaskManager.task_lock.write_release()
+        return False
