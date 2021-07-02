@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1168</width>
+    <width>799</width>
     <height>601</height>
    </rect>
   </property>
@@ -32,17 +32,17 @@
         </column>
         <column>
          <property name="text">
+          <string>总容量</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
           <string>已使用</string>
          </property>
         </column>
         <column>
          <property name="text">
           <string>剩余</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>总容量</string>
          </property>
         </column>
         <column>
@@ -111,44 +111,9 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="labelHDDUsage">
           <property name="text">
-           <string>总容量</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="labelTotalSpace">
-          <property name="text">
-           <string>20TB</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string> 使用容量</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="labelTotalUsed">
-          <property name="text">
-           <string>10TB</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string> 剩余容量</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="labelTotalFree">
-          <property name="text">
-           <string>10TB</string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -164,6 +129,13 @@
            </size>
           </property>
          </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="labelPlotsInfo">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
@@ -187,6 +159,11 @@
         </column>
         <column>
          <property name="text">
+          <string>总容量</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
           <string>已使用</string>
          </property>
         </column>
@@ -197,7 +174,7 @@
         </column>
         <column>
          <property name="text">
-          <string>总容量</string>
+          <string>文件数</string>
          </property>
         </column>
         <column>

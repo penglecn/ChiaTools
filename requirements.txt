@@ -1,2 +1,5 @@
 PyQt5
 psutil
+blspy==1.0.2
+winreglib
+pyinstaller

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>839</width>
-    <height>507</height>
+    <width>778</width>
+    <height>533</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -66,7 +66,7 @@
      <item>
       <widget class="QCheckBox" name="checkBoxPhase1Limit">
        <property name="text">
-        <string>限制阶段1的任务数量</string>
+        <string>限制阶段1的并发数量</string>
        </property>
       </widget>
      </item>
@@ -83,7 +83,7 @@
      <item>
       <widget class="QCheckBox" name="checkBoxTotalLimit">
        <property name="text">
-        <string>限制总任务数量</string>
+        <string>限制总并发数量</string>
        </property>
       </widget>
      </item>
@@ -98,9 +98,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QCheckBox" name="checkBoxAutoRestartMine">
+      <widget class="QCheckBox" name="checkBoxNextWhenFullyComplete">
        <property name="text">
-        <string>完成后自动重新挖矿</string>
+        <string>等待任务100%后再执行下一轮</string>
        </property>
       </widget>
      </item>
@@ -118,9 +118,37 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="buttonCreateBatchPlots">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>批量创建任务</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="buttonCreatePlot">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>创建任务</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
        </property>
       </widget>
      </item>

@@ -2,65 +2,70 @@
 <ui version="4.0">
  <class>CreatePlotDialog</class>
  <widget class="QDialog" name="CreatePlotDialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>513</width>
-    <height>401</height>
+    <width>507</width>
+    <height>844</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>500</width>
+    <height>0</height>
+   </size>
+  </property>
   <property name="windowTitle">
-   <string>创建P图任务</string>
+   <string>创建任务</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
+     <item row="3" column="0">
+      <widget class="QLabel" name="labelSSD">
        <property name="text">
         <string>临时目录（固态硬盘）</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="3" column="1">
       <widget class="QComboBox" name="comboSSD"/>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_5">
+     <item row="5" column="0">
+      <widget class="QLabel" name="labelHDD">
        <property name="text">
         <string>最终目录（机械硬盘）</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="5" column="1">
       <widget class="QComboBox" name="comboHDD"/>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_2">
+     <item row="6" column="0">
+      <widget class="QLabel" name="labelFpk">
        <property name="text">
         <string>Farmer Public Key(fpk)</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QTextEdit" name="editFpk"/>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_3">
+     <item row="8" column="0">
+      <widget class="QLabel" name="labelPpk">
        <property name="text">
         <string>Pool Public Key(ppk)</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
-      <widget class="QTextEdit" name="editPpk">
-       <property name="sizeAdjustPolicy">
-        <enum>QAbstractScrollArea::AdjustIgnored</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="1">
+     <item row="15" column="1">
       <widget class="QSpinBox" name="spinNumber">
        <property name="enabled">
         <bool>false</bool>
@@ -69,55 +74,61 @@
         <number>1</number>
        </property>
        <property name="maximum">
-        <number>10000</number>
+        <number>50</number>
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="label_7">
+     <item row="16" column="0">
+      <widget class="QLabel" name="labelDelay">
        <property name="text">
         <string>延迟时间</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
+     <item row="16" column="1">
       <widget class="QTimeEdit" name="timeEditDelay">
        <property name="displayFormat">
         <string>HH:mm:ss</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_6">
+     <item row="11" column="0">
+      <widget class="QLabel" name="labelThreadNum">
        <property name="text">
         <string>线程数</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
+     <item row="11" column="1">
       <widget class="QSpinBox" name="spinThreadNum">
        <property name="minimum">
         <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>9999</number>
        </property>
        <property name="value">
         <number>2</number>
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="label_7">
+     <item row="10" column="0">
+      <widget class="QLabel" name="labelMemory">
        <property name="text">
         <string>最大内存</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="1">
+     <item row="10" column="1">
       <widget class="QSpinBox" name="spinMemory">
        <property name="suffix">
         <string>MiB</string>
        </property>
+       <property name="minimum">
+        <number>1000</number>
+       </property>
        <property name="maximum">
-        <number>10000</number>
+        <number>10000000</number>
        </property>
        <property name="singleStep">
         <number>100</number>
@@ -127,19 +138,188 @@
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
+     <item row="15" column="0">
       <widget class="QCheckBox" name="checkBoxSpecifyCount">
        <property name="text">
         <string>指定数量</string>
        </property>
       </widget>
      </item>
+     <item row="12" column="0">
+      <widget class="QLabel" name="labelBucketNum">
+       <property name="text">
+        <string>桶数(Buckets)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="labelK">
+       <property name="text">
+        <string>Plot大小(K)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QComboBox" name="comboK"/>
+     </item>
+     <item row="14" column="0">
+      <widget class="QLabel" name="labelNoBitfield">
+       <property name="text">
+        <string>禁止位域(bitfield)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="14" column="1">
+      <widget class="QCheckBox" name="checkBoxNoBitfield">
+       <property name="text">
+        <string>禁止</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelCmdLine">
+       <property name="text">
+        <string>P图命令行程序</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboCmdLine"/>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="lineEditCmdLine">
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QPlainTextEdit" name="editFpk">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>40</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QPlainTextEdit" name="editPpk">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>40</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item row="17" column="0">
+      <widget class="QLabel" name="labelReserve">
+       <property name="text">
+        <string>预留系统内存</string>
+       </property>
+      </widget>
+     </item>
+     <item row="17" column="1">
+      <widget class="QSpinBox" name="spinReservedMemory">
+       <property name="suffix">
+        <string>MiB</string>
+       </property>
+       <property name="minimum">
+        <number>4096</number>
+       </property>
+       <property name="maximum">
+        <number>10000000</number>
+       </property>
+       <property name="singleStep">
+        <number>100</number>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="1">
+      <widget class="QComboBox" name="comboBucketNum">
+       <property name="currentText">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QComboBox" name="comboTemp2">
+       <property name="editable">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QCheckBox" name="checkBoxSpecifyTemp2">
+       <property name="text">
+        <string>第二临时目录</string>
+       </property>
+      </widget>
+     </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QTreeWidget" name="treeWidgetTasks">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>250</height>
+      </size>
+     </property>
+     <column>
+      <property name="text">
+       <string>临时目录</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>最终目录</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>内存</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>线程</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>延迟</string>
+      </property>
+     </column>
+    </widget>
    </item>
    <item>
     <widget class="QCommandLinkButton" name="commandLinkButton">
      <property name="text">
       <string>关于fpk和ppk</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="labelTip">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -155,6 +335,20 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>comboCmdLine</tabstop>
+  <tabstop>lineEditCmdLine</tabstop>
+  <tabstop>comboSSD</tabstop>
+  <tabstop>comboHDD</tabstop>
+  <tabstop>comboK</tabstop>
+  <tabstop>spinMemory</tabstop>
+  <tabstop>spinThreadNum</tabstop>
+  <tabstop>checkBoxNoBitfield</tabstop>
+  <tabstop>checkBoxSpecifyCount</tabstop>
+  <tabstop>spinNumber</tabstop>
+  <tabstop>timeEditDelay</tabstop>
+  <tabstop>commandLinkButton</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
