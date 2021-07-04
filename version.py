@@ -1,2 +1,2 @@
-version = '1.4.3'
-beta = ''
+version = '1.5'
+beta = 'beta1'
