@@ -5,7 +5,7 @@ from ui.CreatePlotDialog import Ui_CreatePlotDialog
 from core.plot import PlotTask, PlotSubTask
 from config import get_config, save_config
 import os
-from utils import make_name, size_to_str, get_k_size, get_k_temp_size, get_fpk_ppk, get_official_chia_exe, seconds_to_str
+from utils import make_name, size_to_str, get_k_size, get_k_temp_size, get_fpk_ppk, get_wallets, get_official_chia_exe, seconds_to_str
 from datetime import datetime
 from core.disk import get_disk_usage
 from PyQt5.QtWidgets import QFileDialog
@@ -19,6 +19,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     last_ssd_folder = ''
     last_hdd_folder = ''
     selected_temp2_folders = []
+    wallets = {}
 
     def __init__(self, task: Optional[PlotTask] = None, auto=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -29,6 +30,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.batch_tasks = []
         self.current_buckets = 128
         self.current_chia_plot_buckets = 256
+        self.custom_fpk = ''
+        self.custom_ppk = ''
 
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
@@ -62,6 +65,13 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         chia_exe = get_official_chia_exe()
         if chia_exe:
             self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
+            if not CreatePlotDialog.wallets:
+                CreatePlotDialog.wallets = get_wallets(chia_exe)
+        else:
+            CreatePlotDialog.wallets = {}
+        self.load_wallets()
+
+        wallets = CreatePlotDialog.wallets
 
         if 'buckets' in config:
             self.current_buckets = config['buckets']
@@ -92,6 +102,27 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                     self.comboK.setCurrentIndex(i)
                     return
 
+        def select_wallet(_fpk, _ppk):
+            fp = None
+            for _fp in CreatePlotDialog.wallets:
+                wallet = CreatePlotDialog.wallets[_fp]
+                if wallet['fpk'] == _fpk and wallet['ppk'] == _ppk:
+                    fp = _fp
+                    break
+
+            for i in range(self.comboWallet.count()):
+                if self.comboWallet.itemData(i, Qt.UserRole) == fp:
+                    self.comboWallet.setCurrentIndex(i)
+
+            is_custom = fp is None
+
+            self.editFpk.setDisabled(not is_custom)
+            self.editPpk.setDisabled(not is_custom)
+
+            if is_custom:
+                self.custom_fpk = _fpk
+                self.custom_ppk = _ppk
+
         self.modify = False
 
         if task:
@@ -114,10 +145,12 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             else:
                 self.comboHDD.setCurrentIndex(current_index)
 
+            select_wallet(task.fpk, task.ppk)
             self.editFpk.setPlainText(task.fpk)
             self.editFpk.setDisabled(True)
             self.editPpk.setPlainText(task.ppk)
             self.editPpk.setDisabled(True)
+            self.editNft.setPlainText(task.nft)
 
             self.checkBoxSpecifyCount.setChecked(task.specify_count)
             self.checkBoxSpecifyCount.setDisabled(True)
@@ -169,17 +202,24 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             fpk = ''
             ppk = ''
+            nft = ''
             if 'fpk' in config:
                 fpk = config['fpk']
 
             if 'ppk' in config:
                 ppk = config['ppk']
 
-            if not fpk and not ppk and chia_exe:
-                fpk, ppk = get_fpk_ppk(chia_exe)
+            if 'nft' in config:
+                nft = config['nft']
+
+            if fpk and ppk:
+                select_wallet(fpk, ppk)
+            elif wallets:
+                fpk, ppk = wallets[tuple(wallets.keys())[0]]
 
             self.editFpk.setPlainText(fpk)
             self.editPpk.setPlainText(ppk)
+            self.editNft.setPlainText(nft)
 
             if 'num' in config:
                 self.spinNumber.setValue(config['num'])
@@ -204,11 +244,14 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboTemp2.currentIndexChanged.connect(self.slot_change_temp2)
         self.comboBucketNum.currentIndexChanged.connect(self.slot_change_buckets)
         self.comboCmdLine.currentIndexChanged.connect(self.change_cmdline)
+        self.comboWallet.currentIndexChanged.connect(self.change_wallet)
         self.change_cmdline()
 
         self.comboSSD.currentIndexChanged.connect(self.update_form_items)
         self.comboCmdLine.currentIndexChanged.connect(self.update_form_items)
         self.comboHDD.currentIndexChanged.connect(self.update_tip_text)
+        self.comboCmdLine.currentIndexChanged.connect(self.update_tip_text)
+        self.editNft.textChanged.connect(self.update_tip_text)
         self.checkBoxNoBitfield.stateChanged.connect(self.check_nobitfield)
 
         self.comboCmdLine.currentIndexChanged.connect(self.slot_create_batch_tasks)
@@ -252,6 +295,18 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.comboTemp2.addItem(self.get_folder_display_text(selected_folder), selected_folder)
 
         self.select_temp2('')
+
+    def load_wallets(self):
+        self.labelWallet.setVisible(True)
+        self.comboWallet.setVisible(True)
+        self.comboWallet.clear()
+        if not CreatePlotDialog.wallets:
+            self.comboWallet.setVisible(False)
+            self.labelWallet.setVisible(False)
+            return
+        for fp in CreatePlotDialog.wallets:
+            self.comboWallet.addItem(f'公共指纹为 {fp} 的私钥', fp)
+        self.comboWallet.addItem('自定义', None)
 
     def select_temp2(self, folder):
         for i in range(self.comboTemp2.count()):
@@ -528,8 +583,17 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         ssd_folder = self.comboSSD.currentData(Qt.UserRole)
         hdd_folder = self.comboHDD.currentData(Qt.UserRole)
         num = self.spinNumber.value()
+        nft = self.editNft.toPlainText()
 
-        text = f'创建一条并发任务，使用固态硬盘{ssd_folder}作为临时目录，'
+        cmdline = self.lineEditCmdLine.text()
+
+        text = '使用'
+        if nft and self.is_cmdline_support_nft(cmdline):
+            text += '新协议'
+        else:
+            text += '旧协议'
+
+        text += f'创建一条并发任务，将固态硬盘{ssd_folder}作为临时目录，'
         if hdd_folder == 'auto':
             text += '向所有可用机械硬盘'
         else:
@@ -587,6 +651,34 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         else:
             self.select_buckets(self.current_buckets)
 
+        nft_support = self.is_cmdline_support_nft(cmdline)
+        self.labelNft.setVisible(nft_support)
+        self.editNft.setVisible(nft_support)
+
+    def is_cmdline_support_nft(self, cmdline):
+        if cmdline == self.get_chia_plot_exe():
+            return True
+        return False
+
+    def change_wallet(self):
+        fp = self.comboWallet.currentData(Qt.UserRole)
+
+        self.editFpk.setDisabled(fp is not None)
+        self.editPpk.setDisabled(fp is not None)
+
+        self.editFpk.setPlainText('')
+        self.editPpk.setPlainText('')
+
+        if fp:
+            wallet = CreatePlotDialog.wallets[fp]
+            fpk, ppk = wallet['fpk'], wallet['ppk']
+        else:
+            fpk = self.custom_fpk
+            ppk = self.custom_ppk
+
+        self.editFpk.setPlainText(fpk)
+        self.editPpk.setPlainText(ppk)
+
     def about_public_key(self):
         QMessageBox.information(self, '提示', '该软件不会向用户索要助记词。\n如果你已经安装了Chia官方钱包软件并且创建了钱包，fpk和ppk会自动获取。如果没有安装，请使用第三方工具（如：HPool提供的签名软件等）来生成。')
 
@@ -609,6 +701,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         nobitfield = self.checkBoxNoBitfield.isChecked()
         hdd_folder = self.comboHDD.currentData(Qt.UserRole)
         cmdline = self.lineEditCmdLine.text()
+        nft = self.editNft.toPlainText()
 
         if self.checkBoxSpecifyTemp2.isChecked():
             temp2_folder = self.comboTemp2.currentData(Qt.UserRole)
@@ -627,6 +720,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.task.k = k
         self.task.nobitfield = nobitfield
         self.task.cmdline = cmdline
+        self.task.nft = nft
         self.task.temporary2_folder = temp2_folder
 
         if cmdline == self.get_builtin_exe():
@@ -654,6 +748,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     def accept(self) -> None:
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
+        nft = self.editNft.toPlainText()
         buckets = self.comboBucketNum.currentData(Qt.UserRole)
         k = int(self.comboK.currentData(Qt.UserRole))
         nobitfield = self.checkBoxNoBitfield.isChecked()
@@ -691,6 +786,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 CreatePlotDialog.selected_temp2_folders.append(temp2_folder)
         else:
             temp2_folder = ''
+
+        if nft and self.is_cmdline_support_nft(cmdline) and (len(nft) != 62 or not nft.startswith('xch')):
+            QMessageBox.information(self, '提示', 'NFT合约地址格式错误，请检查')
+            return
 
         if self.modify:
             self.accept_modify()
@@ -748,6 +847,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         config['cmdline'] = cmdline
         config['fpk'] = fpk
         config['ppk'] = ppk
+        config['nft'] = nft
 
         if cmdline == self.get_chia_plot_exe():
             config['chia_plot_buckets'] = buckets
@@ -772,14 +872,14 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
                 _memory = _memory // 1024 // 1024
 
-                task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, buckets=buckets, k=k, nobitfield=nobitfield,
+                task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, nft=nft, buckets=buckets, k=k, nobitfield=nobitfield,
                                         ssd_folder=_ssd_folder, hdd_folder=_hdd_folder, temp2_folder=temp2_folder,
                                         specify_count=False,count=1, thread_num=_thread, memory_size=_memory,
                                         delay=_delay)
                 if task:
                     self.result.append(task)
         else:
-            task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, buckets=buckets, k=k, nobitfield=nobitfield,
+            task = self.create_task(cmdline=cmdline, fpk=fpk, ppk=ppk, nft=nft, buckets=buckets, k=k, nobitfield=nobitfield,
                                     ssd_folder=ssd_folder, hdd_folder=hdd_folder, temp2_folder=temp2_folder,
                                     specify_count=specify_count, count=number, thread_num=thread_num,
                                     memory_size=memory_size, delay=delay)
@@ -791,7 +891,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         super().accept()
 
-    def create_task(self, cmdline, fpk, ppk, buckets, k, nobitfield, ssd_folder, hdd_folder, temp2_folder, specify_count, count,
+    def create_task(self, cmdline, fpk, ppk, nft, buckets, k, nobitfield, ssd_folder, hdd_folder, temp2_folder, specify_count, count,
                     thread_num, memory_size, delay) -> Optional[PlotTask]:
         temporary_folder = os.path.join(ssd_folder, make_name(12))
         temporary_folder = temporary_folder.replace('\\', '/')
@@ -825,6 +925,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         task.create_time = datetime.now()
         task.fpk = fpk
         task.ppk = ppk
+        task.nft = nft
         task.buckets = buckets
         task.k = k
         task.nobitfield = nobitfield

@@ -37,6 +37,7 @@ class PlotTask(QObject):
         self.plotter_type = 0
         self.fpk = ''
         self.ppk = ''
+        self.nft = ''
         self.k = 32
         self.buckets = 128
         self.nobitfield = False
@@ -945,6 +946,7 @@ class PlotWorker(QThread):
         elif t.plotter_type == PLOTTER_CHIA_PLOT:
             fpk = t.fpk
             ppk = t.ppk
+            nft = t.nft
             if fpk.startswith('0x'):
                 fpk = fpk[2:]
             if ppk.startswith('0x'):
@@ -956,8 +958,11 @@ class PlotWorker(QThread):
                 '-t', t.temporary_folder + '/',
                 '-2', temp2_folder + '/',
                 '-f', fpk,
-                '-p', ppk,
             ]
+            if nft:
+                args += ['-c', nft]
+            else:
+                args += ['-p', ppk]
 
         return args
 

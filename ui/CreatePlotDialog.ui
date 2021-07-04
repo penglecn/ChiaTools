@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>507</width>
-    <height>844</height>
+    <height>882</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -51,21 +51,21 @@
      <item row="5" column="1">
       <widget class="QComboBox" name="comboHDD"/>
      </item>
-     <item row="6" column="0">
+     <item row="7" column="0">
       <widget class="QLabel" name="labelFpk">
        <property name="text">
         <string>Farmer Public Key(fpk)</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
+     <item row="9" column="0">
       <widget class="QLabel" name="labelPpk">
        <property name="text">
         <string>Pool Public Key(ppk)</string>
        </property>
       </widget>
      </item>
-     <item row="15" column="1">
+     <item row="17" column="1">
       <widget class="QSpinBox" name="spinNumber">
        <property name="enabled">
         <bool>false</bool>
@@ -78,28 +78,28 @@
        </property>
       </widget>
      </item>
-     <item row="16" column="0">
+     <item row="18" column="0">
       <widget class="QLabel" name="labelDelay">
        <property name="text">
         <string>延迟时间</string>
        </property>
       </widget>
      </item>
-     <item row="16" column="1">
+     <item row="18" column="1">
       <widget class="QTimeEdit" name="timeEditDelay">
        <property name="displayFormat">
         <string>HH:mm:ss</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="0">
+     <item row="13" column="0">
       <widget class="QLabel" name="labelThreadNum">
        <property name="text">
         <string>线程数</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="1">
+     <item row="13" column="1">
       <widget class="QSpinBox" name="spinThreadNum">
        <property name="minimum">
         <number>1</number>
@@ -112,14 +112,14 @@
        </property>
       </widget>
      </item>
-     <item row="10" column="0">
+     <item row="12" column="0">
       <widget class="QLabel" name="labelMemory">
        <property name="text">
         <string>最大内存</string>
        </property>
       </widget>
      </item>
-     <item row="10" column="1">
+     <item row="12" column="1">
       <widget class="QSpinBox" name="spinMemory">
        <property name="suffix">
         <string>MiB</string>
@@ -138,38 +138,38 @@
        </property>
       </widget>
      </item>
-     <item row="15" column="0">
+     <item row="17" column="0">
       <widget class="QCheckBox" name="checkBoxSpecifyCount">
        <property name="text">
         <string>指定数量</string>
        </property>
       </widget>
      </item>
-     <item row="12" column="0">
+     <item row="14" column="0">
       <widget class="QLabel" name="labelBucketNum">
        <property name="text">
         <string>桶数(Buckets)</string>
        </property>
       </widget>
      </item>
-     <item row="9" column="0">
+     <item row="11" column="0">
       <widget class="QLabel" name="labelK">
        <property name="text">
         <string>Plot大小(K)</string>
        </property>
       </widget>
      </item>
-     <item row="9" column="1">
+     <item row="11" column="1">
       <widget class="QComboBox" name="comboK"/>
      </item>
-     <item row="14" column="0">
+     <item row="16" column="0">
       <widget class="QLabel" name="labelNoBitfield">
        <property name="text">
         <string>禁止位域(bitfield)</string>
        </property>
       </widget>
      </item>
-     <item row="14" column="1">
+     <item row="16" column="1">
       <widget class="QCheckBox" name="checkBoxNoBitfield">
        <property name="text">
         <string>禁止</string>
@@ -193,7 +193,7 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
+     <item row="7" column="1">
       <widget class="QPlainTextEdit" name="editFpk">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -209,7 +209,7 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
+     <item row="9" column="1">
       <widget class="QPlainTextEdit" name="editPpk">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -225,14 +225,14 @@
        </property>
       </widget>
      </item>
-     <item row="17" column="0">
+     <item row="19" column="0">
       <widget class="QLabel" name="labelReserve">
        <property name="text">
         <string>预留系统内存</string>
        </property>
       </widget>
      </item>
-     <item row="17" column="1">
+     <item row="19" column="1">
       <widget class="QSpinBox" name="spinReservedMemory">
        <property name="suffix">
         <string>MiB</string>
@@ -248,7 +248,7 @@
        </property>
       </widget>
      </item>
-     <item row="12" column="1">
+     <item row="14" column="1">
       <widget class="QComboBox" name="comboBucketNum">
        <property name="currentText">
         <string/>
@@ -266,6 +266,39 @@
       <widget class="QCheckBox" name="checkBoxSpecifyTemp2">
        <property name="text">
         <string>第二临时目录</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="labelWallet">
+       <property name="text">
+        <string>钱包</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QComboBox" name="comboWallet"/>
+     </item>
+     <item row="10" column="0">
+      <widget class="QLabel" name="labelNft">
+       <property name="text">
+        <string>NFT合约地址</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <widget class="QPlainTextEdit" name="editNft">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>40</height>
+        </size>
        </property>
       </widget>
      </item>
