@@ -215,7 +215,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             if fpk and ppk:
                 select_wallet(fpk, ppk)
             elif wallets:
-                fpk, ppk = wallets[tuple(wallets.keys())[0]]
+                wallet = wallets[tuple(wallets.keys())[0]]
+                fpk, ppk = wallet['fpk'], wallet['ppk']
+                self.editFpk.setDisabled(True)
+                self.editPpk.setDisabled(True)
 
             self.editFpk.setPlainText(fpk)
             self.editPpk.setPlainText(ppk)
