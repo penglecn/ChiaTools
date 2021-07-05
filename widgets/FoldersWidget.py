@@ -125,6 +125,11 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         if 'ssd_folders' not in config:
             config['ssd_folders'] = []
+
+        if folder in config['ssd_folders']:
+            QMessageBox.information(self, '提示', f'目录{folder}已经存在')
+            return
+
         config['ssd_folders'].append(folder)
 
         self.addSSDFolder(folder)
@@ -162,6 +167,12 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         if 'hdd_folders' not in config:
             config['hdd_folders'] = []
+
+        for hdd_folder in config['hdd_folders']:
+            if folder == hdd_folder['folder']:
+                QMessageBox.information(self, '提示', f'目录{folder}已经存在')
+                return
+
         config['hdd_folders'].append({
             'folder': folder,
             'mine': True,
