@@ -1,15 +1,17 @@
 import psutil
-from PyQt5.QtWidgets import QDialog, QMessageBox, QTreeWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QDialog, QMessageBox, QTreeWidgetItem, QHeaderView, QStyle
 from PyQt5.QtCore import Qt
 from ui.CreatePlotDialog import Ui_CreatePlotDialog
 from core.plot import PlotTask, PlotSubTask
 from config import get_config, save_config
 import os
-from utils import make_name, size_to_str, get_k_size, get_k_temp_size, get_fpk_ppk, get_wallets, get_official_chia_exe, seconds_to_str
+from utils import make_name, size_to_str, get_k_size, get_k_temp_size, get_official_chia_exe, \
+    seconds_to_str, is_chia_support_new_protocol
 from datetime import datetime
 from core.disk import get_disk_usage
 from PyQt5.QtWidgets import QFileDialog
 from core import BASE_DIR, is_debug
+from core.wallet import wallet_manager
 import platform
 from typing import Optional
 from core.plotter import PLOTTER_OFFICIAL, PLOTTER_BUILTIN, PLOTTER_CHIA_PLOT
@@ -25,6 +27,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
+        self.pushReloadWallets.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+
         self.result = []
         self.task = None
         self.batch_tasks = []
@@ -32,6 +36,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.current_chia_plot_buckets = 256
         self.custom_fpk = ''
         self.custom_ppk = ''
+        self.custom_nft = ''
 
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
@@ -42,8 +47,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.buttonBox.button(self.buttonBox.Ok).setText('创建')
         self.buttonBox.button(self.buttonBox.Cancel).setText('取消')
         self.checkBoxSpecifyCount.stateChanged.connect(self.check_specify_count)
-        self.commandLinkButton.clicked.connect(self.about_public_key)
         self.spinNumber.valueChanged.connect(self.update_tip_text)
+        self.pushReloadWallets.clicked.connect(self.reload_wallets)
+        self.labelReloadingWallets.setVisible(False)
+        wallet_manager.signalGetWallets.connect(self.slot_get_wallets)
 
         self.comboK.addItem('101.4GiB (k=32, 临时文件: 239GiB)', 32)
         self.comboK.addItem('208.8GiB (k=33, 临时文件: 521GiB)', 33)
@@ -60,13 +67,11 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboCmdLine.addItem('使用多线程chia_plot.exe', self.get_chia_plot_exe())
         self.comboCmdLine.setCurrentIndex(0)
 
-        self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
+        # self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
 
-        chia_exe = get_official_chia_exe()
-        if chia_exe:
-            self.comboCmdLine.addItem('使用钱包chia.exe', chia_exe)
-            if not CreatePlotDialog.wallets:
-                CreatePlotDialog.wallets = get_wallets(chia_exe)
+        self.chia_exe, self.chia_ver = get_official_chia_exe()
+        if self.chia_exe:
+            self.comboCmdLine.addItem('使用钱包chia.exe', self.chia_exe)
         else:
             CreatePlotDialog.wallets = {}
         self.load_wallets()
@@ -102,32 +107,13 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                     self.comboK.setCurrentIndex(i)
                     return
 
-        def select_wallet(_fpk, _ppk):
-            fp = None
-            for _fp in CreatePlotDialog.wallets:
-                wallet = CreatePlotDialog.wallets[_fp]
-                if wallet['fpk'] == _fpk and wallet['ppk'] == _ppk:
-                    fp = _fp
-                    break
-
-            for i in range(self.comboWallet.count()):
-                if self.comboWallet.itemData(i, Qt.UserRole) == fp:
-                    self.comboWallet.setCurrentIndex(i)
-
-            is_custom = fp is None
-
-            self.editFpk.setDisabled(not is_custom)
-            self.editPpk.setDisabled(not is_custom)
-
-            if is_custom:
-                self.custom_fpk = _fpk
-                self.custom_ppk = _ppk
-
         self.modify = False
 
         if task:
             self.task = task
             self.modify = True
+
+            self.comboCmdLine.setDisabled(True)
 
             self.comboSSD.addItem(task.ssd_folder, task.ssd_folder)
             self.comboSSD.setDisabled(True)
@@ -145,12 +131,14 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             else:
                 self.comboHDD.setCurrentIndex(current_index)
 
-            select_wallet(task.fpk, task.ppk)
+            self.select_wallet(task.fpk, task.ppk, task.nft)
+            self.change_wallet()
             self.editFpk.setPlainText(task.fpk)
             self.editFpk.setDisabled(True)
             self.editPpk.setPlainText(task.ppk)
             self.editPpk.setDisabled(True)
             self.editNft.setPlainText(task.nft)
+            self.editNft.setDisabled(True)
 
             self.checkBoxSpecifyCount.setChecked(task.specify_count)
             self.checkBoxSpecifyCount.setDisabled(True)
@@ -203,6 +191,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             fpk = ''
             ppk = ''
             nft = ''
+
             if 'fpk' in config:
                 fpk = config['fpk']
 
@@ -213,16 +202,11 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 nft = config['nft']
 
             if fpk and ppk:
-                select_wallet(fpk, ppk)
+                self.select_wallet(fpk, ppk, nft)
             elif wallets:
                 wallet = wallets[tuple(wallets.keys())[0]]
-                fpk, ppk = wallet['fpk'], wallet['ppk']
-                self.editFpk.setDisabled(True)
-                self.editPpk.setDisabled(True)
-
-            self.editFpk.setPlainText(fpk)
-            self.editPpk.setPlainText(ppk)
-            self.editNft.setPlainText(nft)
+                self.select_wallet(wallet['fpk'], wallet['ppk'], wallet['nft'])
+            self.change_wallet()
 
             if 'num' in config:
                 self.spinNumber.setValue(config['num'])
@@ -271,6 +255,26 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.slot_create_batch_tasks()
         self.update_tip_text()
 
+        if self.chia_exe and not CreatePlotDialog.wallets:
+            self.reload_wallets()
+
+    def select_wallet(self, _fpk, _ppk, _nft):
+        fp = None
+        for _fp in CreatePlotDialog.wallets:
+            wallet = CreatePlotDialog.wallets[_fp]
+            if wallet['fpk'] == _fpk and wallet['ppk'] == _ppk and wallet['nft'] == _nft:
+                fp = _fp
+                break
+
+        for i in range(self.comboWallet.count()):
+            if self.comboWallet.itemData(i, Qt.UserRole) == fp:
+                self.comboWallet.setCurrentIndex(i)
+
+        if fp is None:
+            self.custom_fpk = _fpk
+            self.custom_ppk = _ppk
+            self.custom_nft = _nft
+
     def get_folder_display_text(self, folder):
         text = folder
         if os.path.exists(folder):
@@ -302,10 +306,12 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     def load_wallets(self):
         self.labelWallet.setVisible(True)
         self.comboWallet.setVisible(True)
+        self.pushReloadWallets.setVisible(True)
         self.comboWallet.clear()
-        if not CreatePlotDialog.wallets:
+        if not self.chia_exe:
             self.comboWallet.setVisible(False)
             self.labelWallet.setVisible(False)
+            self.pushReloadWallets.setVisible(False)
             return
         for fp in CreatePlotDialog.wallets:
             self.comboWallet.addItem(f'公共指纹为 {fp} 的私钥', fp)
@@ -661,6 +667,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     def is_cmdline_support_nft(self, cmdline):
         if cmdline == self.get_chia_plot_exe():
             return True
+        elif cmdline == self.chia_exe and is_chia_support_new_protocol(self.chia_ver):
+            return True
         return False
 
     def change_wallet(self):
@@ -668,22 +676,51 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.editFpk.setDisabled(fp is not None)
         self.editPpk.setDisabled(fp is not None)
+        self.editNft.setDisabled(fp is not None)
 
         self.editFpk.setPlainText('')
         self.editPpk.setPlainText('')
+        self.editNft.setPlainText('')
 
         if fp:
             wallet = CreatePlotDialog.wallets[fp]
-            fpk, ppk = wallet['fpk'], wallet['ppk']
+            fpk, ppk, nft = wallet['fpk'], wallet['ppk'], wallet['nft']
         else:
             fpk = self.custom_fpk
             ppk = self.custom_ppk
+            nft = self.custom_nft
 
         self.editFpk.setPlainText(fpk)
         self.editPpk.setPlainText(ppk)
+        self.editNft.setPlainText(nft)
 
-    def about_public_key(self):
-        QMessageBox.information(self, '提示', '该软件不会向用户索要助记词。\n如果你已经安装了Chia官方钱包软件并且创建了钱包，fpk和ppk会自动获取。如果没有安装，请使用第三方工具（如：HPool提供的签名软件等）来生成。')
+    def reload_wallets(self):
+        if not self.chia_exe:
+            return
+
+        self.pushReloadWallets.setVisible(False)
+        self.labelReloadingWallets.setVisible(True)
+        # self.pushReloadWallets.hide()
+        # self.labelReloadingWallets.show()
+        self.comboWallet.setDisabled(True)
+
+        wallet_manager.reload_wallets(self.chia_exe, self.chia_ver)
+
+    def slot_get_wallets(self, wallets):
+        fpk = self.editFpk.toPlainText()
+        ppk = self.editPpk.toPlainText()
+        nft = self.editNft.toPlainText()
+
+        CreatePlotDialog.wallets = wallets
+        self.load_wallets()
+
+        self.select_wallet(fpk, ppk, nft)
+
+        self.pushReloadWallets.setVisible(True)
+        self.labelReloadingWallets.setVisible(False)
+        # self.pushReloadWallets.show()
+        # self.labelReloadingWallets.hide()
+        self.comboWallet.setDisabled(False)
 
     def check_nobitfield(self, value):
         if value != 0:
@@ -703,8 +740,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         k = int(self.comboK.currentData(Qt.UserRole))
         nobitfield = self.checkBoxNoBitfield.isChecked()
         hdd_folder = self.comboHDD.currentData(Qt.UserRole)
-        cmdline = self.lineEditCmdLine.text()
-        nft = self.editNft.toPlainText()
 
         if self.checkBoxSpecifyTemp2.isChecked():
             temp2_folder = self.comboTemp2.currentData(Qt.UserRole)
@@ -722,16 +757,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.task.buckets = buckets
         self.task.k = k
         self.task.nobitfield = nobitfield
-        self.task.cmdline = cmdline
-        self.task.nft = nft
         self.task.temporary2_folder = temp2_folder
-
-        if cmdline == self.get_builtin_exe():
-            self.task.plotter_type = PLOTTER_BUILTIN
-        elif cmdline == get_official_chia_exe():
-            self.task.plotter_type = PLOTTER_OFFICIAL
-        elif cmdline == self.get_chia_plot_exe():
-            self.task.plotter_type = PLOTTER_CHIA_PLOT
 
         if self.task.specify_count:
             for sub in self.task.sub_tasks:
@@ -790,7 +816,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         else:
             temp2_folder = ''
 
-        if nft and self.is_cmdline_support_nft(cmdline) and (len(nft) != 62 or not nft.startswith('xch')):
+        if not self.is_cmdline_support_nft(cmdline):
+            nft = ''
+
+        if nft and (len(nft) != 62 or not nft.startswith('xch')):
             QMessageBox.information(self, '提示', 'NFT合约地址格式错误，请检查')
             return
 
@@ -813,6 +842,15 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if not ppk:
             QMessageBox.information(self, '提示', '请输入ppk')
             return
+
+        if cmdline == self.chia_exe and not is_chia_support_new_protocol(self.chia_ver):
+            if QMessageBox.information(self, '提示', '确定要使用旧协议吗？\n当前的钱包版本不支持新协议，P出的图只能使用旧协议。想要使用新协议，需要升级钱包。',
+                                       QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                return
+        elif not nft:
+            if QMessageBox.information(self, '提示', '确定要使用旧协议吗？\n没有NFT合约地址，P出的图只能使用旧协议。想要使用新协议，需要到钱包软件中创建NFT合约地址。',
+                                       QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                return
 
         if fpk.startswith('0x'):
             fpk = fpk[2:]
@@ -920,8 +958,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         task.cmdline = cmdline
         if cmdline == self.get_builtin_exe():
             task.plotter_type = PLOTTER_BUILTIN
-        elif cmdline == get_official_chia_exe():
+        elif cmdline == self.chia_exe:
             task.plotter_type = PLOTTER_OFFICIAL
+            task.chia_exe_ver = self.chia_ver
         elif cmdline == self.get_chia_plot_exe():
             task.plotter_type = PLOTTER_CHIA_PLOT
 

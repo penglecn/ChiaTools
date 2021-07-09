@@ -35,6 +35,7 @@ class PlotTask(QObject):
 
         self.cmdline = ''
         self.plotter_type = 0
+        self.chia_exe_ver = ''
         self.fpk = ''
         self.ppk = ''
         self.nft = ''
@@ -887,7 +888,7 @@ class PlotWorker(QThread):
     def build_args(self):
         t = self.task
 
-        plot_id, plot_memo = get_plot_id_and_memo(t.fpk, t.ppk)
+        plot_id, plot_memo = get_plot_id_and_memo(t.fpk, t.ppk, t.nft)
 
         temp2_folder = t.temporary2_folder
         if not temp2_folder:
@@ -920,6 +921,7 @@ class PlotWorker(QThread):
         elif t.plotter_type == PLOTTER_OFFICIAL:
             fpk = t.fpk
             ppk = t.ppk
+            nft = t.nft
             if fpk.startswith('0x'):
                 fpk = fpk[2:]
             if ppk.startswith('0x'):
@@ -928,10 +930,10 @@ class PlotWorker(QThread):
                 t.cmdline,
                 'plots',
                 'create',
-                '-i', plot_id,
+                # '-i', plot_id,
                 '-f', fpk,
-                '-p', ppk,
-                '-m', plot_memo,
+                # '-p', ppk,
+                # '-m', plot_memo,
                 '-x',
                 '-k', f'{t.k}',
                 '-r', f'{t.number_of_thread}',
@@ -943,6 +945,12 @@ class PlotWorker(QThread):
 
             if t.nobitfield:
                 args.append('-e')
+
+            if nft:
+                args += ['-c', nft]
+            else:
+                args += ['-p', ppk]
+
         elif t.plotter_type == PLOTTER_CHIA_PLOT:
             fpk = t.fpk
             ppk = t.ppk

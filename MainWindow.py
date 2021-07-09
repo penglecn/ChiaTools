@@ -3,6 +3,7 @@ from ui.MainWindow import Ui_MainWindow
 from core.plot import PlotTaskManager
 from version import version, beta
 from core.disk import disk_operation
+from core.wallet import wallet_manager
 from config import save_config, get_config
 
 
@@ -12,6 +13,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
         disk_operation.start()
+        wallet_manager.start()
 
         self.tabFoldersWidget.setMainWindow(self)
         self.tabPlotWidget.setMainWindow(self)
