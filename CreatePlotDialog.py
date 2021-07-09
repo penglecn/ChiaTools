@@ -700,8 +700,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.pushReloadWallets.setVisible(False)
         self.labelReloadingWallets.setVisible(True)
-        # self.pushReloadWallets.hide()
-        # self.labelReloadingWallets.show()
         self.comboWallet.setDisabled(True)
 
         wallet_manager.reload_wallets(self.chia_exe, self.chia_ver)
@@ -718,8 +716,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.pushReloadWallets.setVisible(True)
         self.labelReloadingWallets.setVisible(False)
-        # self.pushReloadWallets.show()
-        # self.labelReloadingWallets.hide()
         self.comboWallet.setDisabled(False)
 
     def check_nobitfield(self, value):

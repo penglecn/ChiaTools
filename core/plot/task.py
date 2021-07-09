@@ -413,6 +413,17 @@ class PlotWorker(QThread):
             return None
 
     @property
+    def memory_used(self):
+        try:
+            pos_process = self.get_pos_process()
+            if pos_process:
+                m = pos_process.memory_info()
+                return m.private
+        except Exception as e:
+            pass
+        return 0
+
+    @property
     def able_to_calc_progress(self):
         buckets = self.sub_task.buckets
 
@@ -816,17 +827,6 @@ class PlotWorker(QThread):
                         self.sub_task.progress = progress
 
         return failed, finished
-
-    @property
-    def memory_used(self):
-        try:
-            pos_process = self.get_pos_process()
-            if pos_process:
-                m = pos_process.memory_info()
-                return m.private
-        except Exception as e:
-            pass
-        return 0
 
     def stop(self):
         if self.task.delay_remain():

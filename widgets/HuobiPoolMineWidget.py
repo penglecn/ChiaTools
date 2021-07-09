@@ -14,6 +14,7 @@ import platform
 import time
 from core.disk import disk_operation
 from utils import is_auto_launch, setup_auto_launch
+import psutil
 
 
 class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
@@ -83,6 +84,14 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
             if time.time() - self.last_mine_log_time > 60*2:
                 self.last_mine_log_time = 0
                 self.restartMine('等待超时，重启挖矿进程')
+
+            try:
+                p = psutil.Process(pid=self.mine_process.pid)
+                m = p.memory_info()
+                if m.private > 1024*1024*500:
+                    self.restartMine('挖矿进程的内存超过500M，重启挖矿进程')
+            except:
+                pass
 
     def slotDiskOperation(self, name, opt):
         result = opt['result']
