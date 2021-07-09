@@ -133,6 +133,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             self.select_wallet(task.fpk, task.ppk, task.nft)
             self.change_wallet()
+            self.comboWallet.setDisabled(True)
+            self.labelReloadingWallets.setVisible(False)
+            self.pushReloadWallets.setVisible(False)
             self.editFpk.setPlainText(task.fpk)
             self.editFpk.setDisabled(True)
             self.editPpk.setPlainText(task.ppk)
@@ -255,7 +258,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.slot_create_batch_tasks()
         self.update_tip_text()
 
-        if self.chia_exe and not CreatePlotDialog.wallets:
+        if not self.modify and self.chia_exe and not CreatePlotDialog.wallets:
             self.reload_wallets()
 
     def select_wallet(self, _fpk, _ppk, _nft):
@@ -685,6 +688,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if fp:
             wallet = CreatePlotDialog.wallets[fp]
             fpk, ppk, nft = wallet['fpk'], wallet['ppk'], wallet['nft']
+
+            if not nft:
+                self.editNft.setDisabled(False)
         else:
             fpk = self.custom_fpk
             ppk = self.custom_ppk
