@@ -637,6 +637,7 @@ class PlotWorker(QThread):
         failed = False
         finished = False
 
+        self.sub_task.abnormal = False
         if text.startswith('Plot Name'):
             r = re.compile(r'Plot Name: (.*)')
             found = re.findall(r, text)
@@ -651,6 +652,9 @@ class PlotWorker(QThread):
 
             if core.is_debug():
                 time.sleep(10)
+        elif 'failed' in text:
+            self.sub_task.abnormal = True
+            self.updateTask()
         elif text.startswith('Copy to'):
             self.sub_task.progress = 100.0
             self.updateTask()
@@ -802,14 +806,14 @@ class PlotWorker(QThread):
                 if self.sub_task.ram != ram:
                     self.sub_task.ram = ram
                     self.updateTask()
-        elif text.startswith('time=') and text.count('level='):
+        elif text.startswith('time=') and 'level=' in text:
             r = re.compile(r'level=(.*) msg=')
             found = re.findall(r, text)
             if found:
                 level = found[0]
                 if level == 'fatal':
                     failed = True
-        elif text.count('Error') and text.count('Retrying'):
+        elif 'Error' in text and 'Retrying' in text:
             self.sub_task.abnormal = True
 
         try:
