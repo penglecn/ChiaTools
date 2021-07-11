@@ -679,7 +679,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.editFpk.setDisabled(fp is not None)
         self.editPpk.setDisabled(fp is not None)
-        self.editNft.setDisabled(fp is not None)
+        self.editNft.setDisabled(False)
 
         self.editFpk.setPlainText('')
         self.editPpk.setPlainText('')
@@ -688,9 +688,6 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if fp:
             wallet = CreatePlotDialog.wallets[fp]
             fpk, ppk, nft = wallet['fpk'], wallet['ppk'], wallet['nft']
-
-            if not nft:
-                self.editNft.setDisabled(False)
         else:
             fpk = self.custom_fpk
             ppk = self.custom_ppk
