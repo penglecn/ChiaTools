@@ -948,7 +948,6 @@ class PlotWorker(QThread):
                 '-f', fpk,
                 # '-p', ppk,
                 # '-m', plot_memo,
-                '-x',
                 '-k', f'{t.k}',
                 '-r', f'{t.number_of_thread}',
                 '-u', f'{t.buckets}',
@@ -964,6 +963,7 @@ class PlotWorker(QThread):
                 args += ['-c', nft]
             else:
                 args += ['-p', ppk]
+                args.append('-x')
         elif t.plotter_type == PLOTTER_CHIA_PLOT:
             fpk = t.fpk
             ppk = t.ppk
