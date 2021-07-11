@@ -155,6 +155,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         action_suspend_for_3h = None
         action_suspend_for_4h = None
         action_resume = None
+        action_continue = None
         action_next_stop = None
         action_locate_temp = None
         action_locate_temp2 = None
@@ -170,6 +171,13 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         if task.finish:
             if root_item:
+                if task.success:
+                    menu.addSeparator()
+                    if task.specify_count:
+                        action_increase_number = menu.addAction(u"增加数量")
+                    else:
+                        action_continue = menu.addAction(u"继续")
+
                 menu.addSeparator()
                 action_delete = menu.addAction(u"删除")
                 if not task.success:
@@ -365,6 +373,10 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 for sub in task.sub_tasks:
                     if sub.working:
                         sub.worker.resume()
+        elif action == action_continue:
+            if task.finish:
+                task.next_stop = False
+                task.do_next()
         elif action == action_next_stop:
             task.next_stop = not task.next_stop
         elif action == action_locate_temp:
@@ -388,10 +400,14 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             if not task.delete_temp_files():
                 QMessageBox.warning(self, '提示', '清除临时文件失败！')
         elif action == action_increase_number:
+            finished = task.finish
             sub_task = task.increase()
             if task.count == 2:
                 self.addSubTaskItem(item, task.sub_tasks[0])
             self.addSubTaskItem(item, sub_task)
+            if finished:
+                task.do_next()
+                return
         elif action == action_reduce_number:
             sub_task = task.sub_tasks[-1]
             if sub_task.finish or sub_task.working:

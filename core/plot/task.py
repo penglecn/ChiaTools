@@ -61,6 +61,9 @@ class PlotTask(QObject):
         self.able_to_next = True
         self.doing_next = False
 
+        self.connect_signal()
+
+    def connect_signal(self):
         self.signalMakingPlot.connect(self.makingPlot)
         self.signalNewPlot.connect(self.newPlot)
 
@@ -71,6 +74,7 @@ class PlotTask(QObject):
     def __setstate__(self, state):
         super(PlotTask, self).__init__()
         self.__dict__.update(state)
+        self.connect_signal()
 
     def start(self):
         self.sub_tasks[0].worker.start()
@@ -628,7 +632,7 @@ class PlotWorker(QThread):
             self.updateTask()
 
             if core.is_debug():
-                time.sleep(10)
+                time.sleep(2)
         elif text.startswith('Copied final file'):
             self.sub_task.progress = 100.0
             self.updateTask()
@@ -651,7 +655,7 @@ class PlotWorker(QThread):
             self.updateTask()
 
             if core.is_debug():
-                time.sleep(10)
+                time.sleep(2)
         elif 'failed' in text:
             self.sub_task.abnormal = True
             self.updateTask()
@@ -898,6 +902,12 @@ class PlotWorker(QThread):
         if not temp2_folder:
             temp2_folder = t.temporary_folder
 
+        cmdline = t.cmdline
+
+        if is_debug():
+            cmdline = os.path.dirname(cmdline)
+            cmdline = os.path.join(cmdline, 'test.exe')
+
         args = []
         if t.plotter_type == PLOTTER_BUILTIN:
             dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M")
@@ -905,7 +915,7 @@ class PlotWorker(QThread):
             plot_filename: str = f"plot-k{t.k}-{dt_string}-{plot_id}.plot"
 
             args = [
-                t.cmdline,
+                cmdline,
                 'create',
                 '-i', '0x' + plot_id,
                 '-m', '0x' + plot_memo,
@@ -931,7 +941,7 @@ class PlotWorker(QThread):
             if ppk.startswith('0x'):
                 ppk = ppk[2:]
             args = [
-                t.cmdline,
+                cmdline,
                 'plots',
                 'create',
                 # '-i', plot_id,
@@ -954,7 +964,6 @@ class PlotWorker(QThread):
                 args += ['-c', nft]
             else:
                 args += ['-p', ppk]
-
         elif t.plotter_type == PLOTTER_CHIA_PLOT:
             fpk = t.fpk
             ppk = t.ppk
@@ -964,7 +973,7 @@ class PlotWorker(QThread):
             if ppk.startswith('0x'):
                 ppk = ppk[2:]
             args = [
-                t.cmdline,
+                cmdline,
                 '-r', f'{t.number_of_thread}',
                 '-u', f'{t.buckets}',
                 '-t', t.temporary_folder + '/',
@@ -1221,12 +1230,15 @@ class PlotTaskManager(QObject):
 
         return random.choice(available_folders)
 
-    def add_task(self, task: PlotTask):
+    def connect_task(self, task: PlotTask):
         task.signalUpdateTask.connect(self.signalUpdateTask)
         task.signalMakingPlot.connect(self.signalMakingPlot)
         task.signalNewPlot.connect(self.signalNewPlot)
         task.signalNewSubTask.connect(self.signalNewSubTask)
         task.signalSubTaskDone.connect(self.signalSubTaskDone)
+
+    def add_task(self, task: PlotTask):
+        self.connect_task(task)
 
         PlotTaskManager.task_lock.write_acquire()
         PlotTaskManager.tasks.append(task)
@@ -1245,8 +1257,7 @@ class PlotTaskManager(QObject):
         PlotTaskManager.task_lock.write_release()
         PlotTaskManager.save_tasks()
 
-    @staticmethod
-    def load_tasks():
+    def load_tasks(self):
         PlotTaskManager.task_lock.write_acquire()
         PlotTaskManager.tasks = []
 
@@ -1260,6 +1271,8 @@ class PlotTaskManager(QObject):
 
         changed = False
         for task in PlotTaskManager.tasks:
+            self.connect_task(task)
+
             for sub_task in task.sub_tasks:
                 if not sub_task.finish:
                     sub_task.status = '异常结束'
