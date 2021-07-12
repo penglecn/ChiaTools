@@ -173,6 +173,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             if root_item:
                 if task.success:
                     menu.addSeparator()
+                    action_modify = menu.addAction(u"编辑")
                     if task.specify_count:
                         action_increase_number = menu.addAction(u"增加数量")
                     else:
