@@ -748,11 +748,11 @@ class PlotWorker(QThread):
                 if 'Starting to write C1 and C3 tables' in text:
                     bucket = 1
                 elif 'Finished writing C1 and C3 tables' in text:
-                    bucket = 1
+                    bucket = 2
                 elif 'Writing C2 table' in text:
-                    bucket = 1
+                    bucket = 3
                 elif 'Finished writing C2 table' in text:
-                    bucket = 1
+                    bucket = 4
                 else:
                     return failed, finished
             else:
@@ -894,6 +894,10 @@ class PlotWorker(QThread):
             pass
 
     def build_args(self):
+        if is_debug():
+            cmdline = os.path.join(BASE_DIR, 'bin', 'windows', 'plotter', 'test.exe')
+            return [cmdline, 'logs.txt', '800']
+
         t = self.task
 
         plot_id, plot_memo = get_plot_id_and_memo(t.fpk, t.ppk, t.nft)
@@ -903,10 +907,6 @@ class PlotWorker(QThread):
             temp2_folder = t.temporary_folder
 
         cmdline = t.cmdline
-
-        if is_debug():
-            cmdline = os.path.dirname(cmdline)
-            cmdline = os.path.join(cmdline, 'test.exe')
 
         args = []
         if t.plotter_type == PLOTTER_BUILTIN:
