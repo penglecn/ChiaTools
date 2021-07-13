@@ -171,13 +171,13 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         if task.finish:
             if root_item:
-                if task.success:
-                    menu.addSeparator()
-                    action_modify = menu.addAction(u"编辑")
-                    if task.specify_count:
-                        action_increase_number = menu.addAction(u"增加数量")
-                    else:
-                        action_continue = menu.addAction(u"继续")
+                # if task.success:
+                menu.addSeparator()
+                action_modify = menu.addAction(u"编辑")
+                if task.specify_count:
+                    action_increase_number = menu.addAction(u"增加数量")
+                else:
+                    action_continue = menu.addAction(u"继续")
 
                 menu.addSeparator()
                 action_delete = menu.addAction(u"删除")
@@ -317,8 +317,24 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             if sub_task_item:
                 sub_task.worker.stop()
             else:
+                including_copying = False
+                for sub in task.sub_tasks:
+                    if sub.working and sub.worker and sub.worker.copying:
+                        msg = QMessageBox(QMessageBox.Information, '提示', "要将正在生成文件的任务停止吗？", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+
+                        msg.button(QMessageBox.Yes).setText('是')
+                        msg.button(QMessageBox.No).setText('否')
+
+                        answer = msg.exec()
+                        if answer == QMessageBox.Cancel:
+                            return
+                        elif answer == QMessageBox.Yes:
+                            including_copying = True
+                        break
                 for sub in task.sub_tasks:
                     if sub.working:
+                        if sub.worker and sub.worker.copying and not including_copying:
+                            continue
                         sub.worker.stop()
         elif action == action_suspend:
             if sub_task_item:
@@ -403,8 +419,6 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         elif action == action_increase_number:
             finished = task.finish
             sub_task = task.increase()
-            if task.count == 2:
-                self.addSubTaskItem(item, task.sub_tasks[0])
             self.addSubTaskItem(item, sub_task)
             if finished:
                 task.do_next()
@@ -444,23 +458,20 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         if not item:
             return
         task: PlotTask = item.data(0, Qt.UserRole)
-        if not task.specify_count:
-            return
 
-        if task.count > 1:
-            self.treePlot.setItemWidget(item, 7, None)
+        self.treePlot.setItemWidget(item, 7, None)
+        self.updateTaskItem(item, task)
 
     def onCollapsed(self, index: QModelIndex):
         item = self.treePlot.itemFromIndex(index)
         if not item:
             return
         task: PlotTask = item.data(0, Qt.UserRole)
-        if not task.specify_count:
-            return
 
         progress = QProgressBar()
         progress.setValue(task.progress)
         self.treePlot.setItemWidget(item, 7, progress)
+        self.updateTaskItem(item, task)
 
     def showTaskOutput(self, index: QModelIndex):
         item = self.treePlot.itemFromIndex(index)
@@ -559,13 +570,13 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         pass
 
     def onNewSubTask(self, task: PlotTask, sub_task: PlotSubTask):
-        pass
-
-    def onSubTaskDone(self, task: PlotTask, sub_task: PlotSubTask):
         if not task.specify_count:
             item = self.getItemFromTask(task)
             if item:
                 self.addSubTaskItem(item, sub_task)
+
+    def onSubTaskDone(self, task: PlotTask, sub_task: PlotSubTask):
+        pass
 
     def restartMine(self, log=''):
         if not self.main_window:
@@ -618,11 +629,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
             item.setExpanded(True)
         else:
             sub_tasks = task.sub_tasks
-            if not task.success:
-                sub_tasks = task.sub_tasks[0:-2]
             for sub in sub_tasks:
-                if sub.finish and sub.success:
-                    self.addSubTaskItem(item, sub)
+                self.addSubTaskItem(item, sub)
             self.treePlot.setItemWidget(item, 7, progress)
 
         self.updateTaskItem(item, task)
@@ -647,69 +655,90 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         item.setText(index, task.ssd_folder)
 
         index += 1
-        if task.auto_hdd_folder:
-            if task.specify_count or not task.current_sub_task.hdd_folder:
+        if item.isExpanded():
+            if task.auto_hdd_folder:
                 item.setText(index, '自动')
             else:
-                item.setText(index, f'{task.current_sub_task.hdd_folder}(自动)')
+                item.setText(index, task.hdd_folder)
         else:
-            item.setText(index, task.hdd_folder)
+            if task.auto_hdd_folder:
+                if task.specify_count or not task.current_sub_task.hdd_folder:
+                    item.setText(index, '自动')
+                else:
+                    item.setText(index, f'{task.current_sub_task.hdd_folder}(自动)')
+            else:
+                item.setText(index, task.hdd_folder)
 
         index += 1
-        delay = task.delay_remain()
-        item.setText(index, task.status)
         item.setBackground(index, QBrush(QColor('#ffffff')))
         item.setForeground(index, QBrush(QColor(0, 0, 0)))
 
-        if task.finish:
-            if task.success:
-                color = QColor('#50c350')
-            else:
-                color = QColor('#e86363')
-            item.setBackground(index, QBrush(color))
-            item.setForeground(index, QBrush(QColor(255, 255, 255)))
-        elif task.suspend:
-            if task.current_sub_task.suspend_time:
-                item.setText(index, f'暂停{seconds_to_str(task.current_sub_task.suspend_remain_time)}')
-            else:
-                item.setText(index, '已暂停')
-        elif task.abnormal:
-            item.setBackground(index, QBrush(QColor('#ffb949')))
-            item.setForeground(index, QBrush(QColor(255, 255, 255)))
-        elif delay:
-            item.setText(index, '等待%s' % seconds_to_str(delay))
-
-        index += 1
-        if task.specify_count:
-            item.setText(index, '%d/%d' % (task.current_task_index + 1, task.count))
+        if item.isExpanded():
+            item.setText(index, '')
         else:
-            if task.success:
-                item.setText(index, '%d' % task.count)
+            delay = task.delay_remain()
+            item.setText(index, task.status)
+            if task.finish:
+                if task.success:
+                    color = QColor('#50c350')
+                else:
+                    color = QColor('#e86363')
+                item.setBackground(index, QBrush(color))
+                item.setForeground(index, QBrush(QColor(255, 255, 255)))
+            elif task.suspend:
+                if task.current_sub_task.suspend_time:
+                    item.setText(index, f'暂停{seconds_to_str(task.current_sub_task.suspend_remain_time)}')
+                else:
+                    item.setText(index, '已暂停')
+            elif task.abnormal:
+                item.setBackground(index, QBrush(QColor('#ffb949')))
+                item.setForeground(index, QBrush(QColor(255, 255, 255)))
+            elif delay:
+                item.setText(index, '等待%s' % seconds_to_str(delay))
+
+        index += 1
+        if item.isExpanded():
+            item.setText(index, '')
+        else:
+            if task.specify_count:
+                item.setText(index, '%d/%d' % (task.current_task_index + 1, task.count))
             else:
-                item.setText(index, '%d' % (task.count - 1))
+                if task.success:
+                    item.setText(index, '%d' % task.count)
+                else:
+                    item.setText(index, '%d' % (task.count - 1))
 
         index += 1
-        if task.begin_time:
-            item.setText(index, task.begin_time.strftime('%Y-%m-%d %H:%M:%S'))
+        if item.isExpanded():
+            item.setText(index, '')
         else:
-            item.setText(index, '--')
+            if task.begin_time:
+                item.setText(index, task.begin_time.strftime('%Y-%m-%d %H:%M:%S'))
+            else:
+                item.setText(index, '--')
 
         index += 1
-        if task.begin_time:
-            end_time = task.end_time
-            if not end_time:
-                end_time = datetime.now()
-            delta = end_time - task.begin_time - timedelta(seconds=task.suspended_seconds)
-            item.setText(index, delta_to_str(delta))
+        if item.isExpanded():
+            item.setText(index, '')
         else:
-            item.setText(index, '--')
+            if task.begin_time:
+                end_time = task.end_time
+                if not end_time:
+                    end_time = datetime.now()
+                delta = end_time - task.begin_time - timedelta(seconds=task.suspended_seconds)
+                item.setText(index, delta_to_str(delta))
+            else:
+                item.setText(index, '--')
 
         index += 1
-        memory_used = task.memory_used
-        item.setText(index, size_to_str(memory_used) if memory_used else '--')
+        if item.isExpanded():
+            item.setText(index, '')
+        else:
+            memory_used = task.memory_used
+            item.setText(index, size_to_str(memory_used) if memory_used else '--')
 
         index += 1
-        if task.specify_count and item.isExpanded() and task.count > 1:
+        if item.isExpanded():
             self.treePlot.setItemWidget(item, index, None)
         else:
             progress: QProgressBar = self.treePlot.itemWidget(item, index)

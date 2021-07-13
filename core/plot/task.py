@@ -59,7 +59,6 @@ class PlotTask(QObject):
         self.current_task_index = 0
         self.sub_tasks: [PlotSubTask] = []
         self.able_to_next = True
-        self.doing_next = False
 
         self.connect_signal()
 
@@ -88,12 +87,11 @@ class PlotTask(QObject):
         if 'next_when_fully_complete' in config and config['next_when_fully_complete']:
             return
 
-        if self.do_next():
-            self.doing_next = True
+        self.do_next()
 
     def newPlot(self, task, sub_task):
-        if self.doing_next:
-            self.doing_next = False
+        doing_next = task.current_sub_task != sub_task
+        if doing_next:
             return
 
         if self.next_stop:
@@ -198,10 +196,7 @@ class PlotTask(QObject):
 
     @property
     def suspend(self):
-        for sub in self.sub_tasks:
-            if sub.suspend:
-                return True
-        return False
+        return self.sub_tasks[self.current_task_index].suspend
 
     @property
     def abnormal(self):
@@ -630,9 +625,6 @@ class PlotWorker(QThread):
             self.sub_task.progress = 99.0
             self.task.signalMakingPlot.emit(self.task, self.sub_task)
             self.updateTask()
-
-            if core.is_debug():
-                time.sleep(2)
         elif text.startswith('Copied final file'):
             self.sub_task.progress = 100.0
             self.updateTask()
@@ -653,9 +645,6 @@ class PlotWorker(QThread):
             self.sub_task.progress = 99.0
             self.task.signalMakingPlot.emit(self.task, self.sub_task)
             self.updateTask()
-
-            if core.is_debug():
-                time.sleep(2)
         elif 'failed' in text:
             self.sub_task.abnormal = True
             self.updateTask()
@@ -896,7 +885,7 @@ class PlotWorker(QThread):
     def build_args(self):
         if is_debug():
             cmdline = os.path.join(BASE_DIR, 'bin', 'windows', 'plotter', 'test.exe')
-            return [cmdline, 'logs.txt', '800']
+            return [cmdline, 'logs.txt', '100', '30000']
 
         t = self.task
 
@@ -1121,12 +1110,26 @@ class PlotWorker(QThread):
 
             if failed:
                 self.sub_task.end_time = datetime.now()
-                for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
-                    rest_sub_task = self.task.sub_tasks[i]
-                    rest_sub_task.success = False
-                    rest_sub_task.status = self.sub_task.status
-                    rest_sub_task.finish = True
-                    self.updateTask(sub_task=rest_sub_task)
+
+                if self.task.specify_count:
+                    if self.task.current_sub_task == self.sub_task:
+                        for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
+                            rest_sub_task = self.task.sub_tasks[i]
+                            rest_sub_task.success = False
+                            rest_sub_task.status = self.sub_task.status
+                            rest_sub_task.finish = True
+                            self.updateTask(sub_task=rest_sub_task)
+                        self.task.current_task_index = len(self.task.sub_tasks) - 1
+                    else:
+                        self.sub_task.success = False
+                        self.sub_task.finish = True
+                        self.updateTask(sub_task=self.sub_task)
+                else:
+                    self.sub_task.success = False
+                    self.sub_task.finish = True
+                    self.updateTask(sub_task=self.sub_task)
+
+                self.updateTask()
                 break
 
     def updateTask(self, task=None, sub_task=None):
