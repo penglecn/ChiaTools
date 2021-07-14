@@ -173,7 +173,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         action_clear_finished = None
         action_export_log = None
 
-        if root_item and (task.specify_count and task.count > 1):
+        if root_item and task.specify_count:
             action_detail.setDisabled(True)
 
         if task.finish:
@@ -486,8 +486,6 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 return
             self.removeSubTaskItem(item, sub_task)
             task.reduce()
-            if task.count == 1:
-                self.removeSubTaskItem(item, task.sub_tasks[0])
         elif action == action_start_immediately:
             if task.delay_remain():
                 task.delay_seconds = 0
@@ -545,10 +543,11 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         show_output = True
 
-        if sub_task_item is None and not task.specify_count:
-            show_output = True
-        elif sub_task_item is None and task.count != 1:
-            show_output = False
+        if sub_task_item is None:
+            if not task.specify_count:
+                show_output = True
+            else:
+                show_output = False
 
         if not show_output:
             item.setExpanded(not item.isExpanded())
@@ -649,7 +648,6 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         self.updateTaskItem(item, task)
 
-        # if not task.specify_count:
         sub_item = self.getSubItemFromSubTask(item, sub_task)
         if sub_item:
             self.updateSubTaskItem(sub_item, sub_task)
@@ -752,7 +750,10 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         index += 1
         if item.isExpanded():
-            item.setText(index, '')
+            if task.specify_count:
+                item.setText(index, '%d/%d' % (task.current_task_index + 1, task.count))
+            else:
+                item.setText(index, '')
         else:
             if task.specify_count:
                 item.setText(index, '%d/%d' % (task.current_task_index + 1, task.count))
