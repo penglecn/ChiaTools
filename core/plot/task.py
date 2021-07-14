@@ -59,6 +59,7 @@ class PlotTask(QObject):
         self.current_task_index = 0
         self.sub_tasks: [PlotSubTask] = []
         self.able_to_next = True
+        self.priority = psutil.NORMAL_PRIORITY_CLASS
 
         self.connect_signal()
 
@@ -882,10 +883,38 @@ class PlotWorker(QThread):
         except:
             pass
 
+    @property
+    def priority(self):
+        if self.process is None:
+            return psutil.NORMAL_PRIORITY_CLASS
+
+        try:
+            pos_process = self.get_pos_process()
+            if pos_process:
+                return pos_process.nice()
+        except Exception as e:
+            pass
+
+        return psutil.NORMAL_PRIORITY_CLASS
+
+    @priority.setter
+    def priority(self, prio):
+        if self.process is None:
+            return
+
+        try:
+            pos_process = self.get_pos_process()
+            if pos_process:
+                pos_process.nice(prio)
+                # pos_process.ionice(psutil.IOPRIO_HIGH)
+                return
+        except Exception as e:
+            pass
+
     def build_args(self):
         if is_debug():
             cmdline = os.path.join(BASE_DIR, 'bin', 'windows', 'plotter', 'test.exe')
-            return [cmdline, 'logs.txt', '100', '30000']
+            return [cmdline, 'logs.txt', '500', '1000']
 
         t = self.task
 
@@ -1044,6 +1073,8 @@ class PlotWorker(QThread):
 
             exe_cwd = os.path.dirname(t.cmdline)
             self.process = Popen(args, stdout=PIPE, stderr=PIPE, cwd=exe_cwd, creationflags=CREATE_NO_WINDOW)
+
+            self.priority = self.task.priority
 
             success = True
             finished = False

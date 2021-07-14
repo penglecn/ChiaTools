@@ -1,3 +1,4 @@
+import psutil
 from PyQt5.QtWidgets import QWidget, QTreeWidgetItem, QHeaderView, QProgressBar, QMessageBox, QMenu, QFileDialog
 from PyQt5.Qt import QBrush, QColor, QModelIndex, QTimerEvent, QCursor
 from PyQt5.QtCore import Qt
@@ -155,6 +156,12 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         action_suspend_for_3h = None
         action_suspend_for_4h = None
         action_resume = None
+        action_priority_realtime = None
+        action_priority_high = None
+        action_priority_above_normal = None
+        action_priority_normal = None
+        action_priority_below_normal = None
+        action_priority_idle = None
         action_continue = None
         action_next_stop = None
         action_locate_temp = None
@@ -171,7 +178,6 @@ class PlotWidget(QWidget, Ui_PlotWidget):
 
         if task.finish:
             if root_item:
-                # if task.success:
                 menu.addSeparator()
                 action_modify = menu.addAction(u"编辑")
                 if task.specify_count:
@@ -220,6 +226,32 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     action_suspend_for_2h = menu_suspend_for.addAction(u"2小时")
                     action_suspend_for_3h = menu_suspend_for.addAction(u"3小时")
                     action_suspend_for_4h = menu_suspend_for.addAction(u"4小时")
+
+                menu_priority = menu.addMenu(u"优先级")
+                action_priority_realtime = menu_priority.addAction(u"实时")
+                action_priority_high = menu_priority.addAction(u"高")
+                action_priority_above_normal = menu_priority.addAction(u"高于普通")
+                action_priority_normal = menu_priority.addAction(u"普通")
+                action_priority_below_normal = menu_priority.addAction(u"低于普通")
+                action_priority_idle = menu_priority.addAction(u"空闲")
+
+                priority = sub_task.worker.priority
+
+                current_priority_action = action_priority_normal
+                if priority == psutil.REALTIME_PRIORITY_CLASS:
+                    current_priority_action = action_priority_realtime
+                elif priority == psutil.HIGH_PRIORITY_CLASS:
+                    current_priority_action = action_priority_high
+                elif priority == psutil.ABOVE_NORMAL_PRIORITY_CLASS:
+                    current_priority_action = action_priority_above_normal
+                elif priority == psutil.BELOW_NORMAL_PRIORITY_CLASS:
+                    current_priority_action = action_priority_below_normal
+                elif priority == psutil.IDLE_PRIORITY_CLASS:
+                    current_priority_action = action_priority_idle
+
+                current_priority_action.setCheckable(True)
+                current_priority_action.setChecked(True)
+
         else:
             if root_item:
                 menu.addSeparator()
@@ -274,7 +306,6 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     if not self.exportSubTaskLog(_sub_task, log_file=log_file):
                         QMessageBox.information(self, '提示', f'导出文件失败 {log_file}')
                         return
-
         elif action == action_modify:
             dlg = CreatePlotDialog(task=task)
             if dlg.exec() == dlg.rejected:
@@ -311,6 +342,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                     if _sub_item:
                         item.removeChild(_sub_item)
                     task.remove_sub_task(sub)
+                    if len(task.sub_tasks) <= 1:
+                        break
         elif action == action_stop:
             if QMessageBox.information(self, '提示', "确定要停止任务吗？停止后无法恢复", QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                 return
@@ -390,6 +423,30 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 for sub in task.sub_tasks:
                     if sub.working:
                         sub.worker.resume()
+        elif action == action_priority_realtime:
+            task.priority = psutil.REALTIME_PRIORITY_CLASS
+            if sub_task.working and sub_task.worker:
+                sub_task.worker.priority = psutil.REALTIME_PRIORITY_CLASS
+        elif action == action_priority_high:
+            task.priority = psutil.HIGH_PRIORITY_CLASS
+            if sub_task.working and sub_task.worker:
+                sub_task.worker.priority = psutil.HIGH_PRIORITY_CLASS
+        elif action == action_priority_above_normal:
+            task.priority = psutil.ABOVE_NORMAL_PRIORITY_CLASS
+            if sub_task.working and sub_task.worker:
+                sub_task.worker.priority = psutil.ABOVE_NORMAL_PRIORITY_CLASS
+        elif action == action_priority_normal:
+            task.priority = psutil.NORMAL_PRIORITY_CLASS
+            if sub_task.working and sub_task.worker:
+                sub_task.worker.priority = psutil.NORMAL_PRIORITY_CLASS
+        elif action == action_priority_below_normal:
+            task.priority = psutil.BELOW_NORMAL_PRIORITY_CLASS
+            if sub_task.working and sub_task.worker:
+                sub_task.worker.priority = psutil.BELOW_NORMAL_PRIORITY_CLASS
+        elif action == action_priority_idle:
+            task.priority = psutil.IDLE_PRIORITY_CLASS
+            if sub_task.working and sub_task.worker:
+                sub_task.worker.priority = psutil.IDLE_PRIORITY_CLASS
         elif action == action_continue:
             if task.finish:
                 task.next_stop = False
@@ -621,11 +678,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         progress.setValue(task.progress)
 
         if task.specify_count:
-            if task.count > 1:
-                for sub in task.sub_tasks:
-                    self.addSubTaskItem(item, sub)
-            else:
-                self.treePlot.setItemWidget(item, 7, progress)
+            for sub in task.sub_tasks:
+                self.addSubTaskItem(item, sub)
             item.setExpanded(True)
         else:
             sub_tasks = task.sub_tasks
