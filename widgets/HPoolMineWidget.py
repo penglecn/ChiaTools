@@ -306,7 +306,7 @@ url:
   info: ""
   submit: ""
 scanPath: true
-scanMinute: 10
+scanMinute: 60
 debug: ""
 '''
 
