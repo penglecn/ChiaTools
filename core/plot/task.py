@@ -652,7 +652,7 @@ class PlotWorker(QThread):
         elif 'failed' in text:
             self.sub_task.abnormal = True
             self.updateTask()
-        elif text.startswith('Copy to'):
+        elif text.startswith('Copy to') or text.startswith('Renamed final plot to'):
             self.sub_task.progress = 100.0
             self.updateTask()
             finished = True
