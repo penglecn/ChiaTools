@@ -1310,12 +1310,17 @@ class PlotTaskManager(QObject):
         for task in PlotTaskManager.tasks:
             self.connect_task(task)
 
+            not_finish = False
             for sub_task in task.sub_tasks:
                 if not sub_task.finish:
                     sub_task.status = '异常结束'
                     sub_task.end_time = datetime.now()
                     sub_task.finish = True
-                changed = True
+                    changed = True
+                    not_finish = True
+
+            if not_finish:
+                task.current_task_index = len(task.sub_tasks) - 1
 
         PlotTaskManager.task_lock.write_release()
 
