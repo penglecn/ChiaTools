@@ -74,6 +74,9 @@ class PlotTask(QObject):
     def __setstate__(self, state):
         super(PlotTask, self).__init__()
         self.__dict__.update(state)
+        for sub in self.sub_tasks:
+            sub.task = self
+            sub.worker = PlotWorker(self, sub)
         self.connect_signal()
 
     def start(self):
@@ -339,7 +342,7 @@ class PlotSubTask(QObject):
         self.log = []
 
         self.task: PlotTask = task
-        self.worker: PlotWorker = PlotWorker(task,  self)
+        self.worker: PlotWorker = PlotWorker(task, self)
 
     def __getstate__(self):
         state = self.__dict__.copy()
