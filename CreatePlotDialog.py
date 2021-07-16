@@ -64,8 +64,10 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         self.comboBucketNum.addItem('128', 128)
         self.comboBucketNum.setCurrentIndex(self.comboBucketNum.count()-1)
 
-        self.comboCmdLine.addItem('使用多线程chia_plot.exe', self.get_chia_plot_exe())
+        chia_plot_exe = self.get_chia_plot_exe()
+        self.comboCmdLine.addItem('使用多线程chia_plot.exe', chia_plot_exe)
         self.comboCmdLine.setCurrentIndex(0)
+        self.lineEditCmdLine.setText(chia_plot_exe)
 
         # self.comboCmdLine.addItem('使用内置ProofOfSpace.exe', self.get_builtin_exe())
 
@@ -670,7 +672,9 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     def is_cmdline_support_nft(self, cmdline):
         if cmdline == self.get_chia_plot_exe():
             return True
-        elif cmdline == self.chia_exe and is_chia_support_new_protocol(self.chia_ver):
+        elif self.chia_exe and self.chia_ver and \
+                cmdline == self.chia_exe and \
+                is_chia_support_new_protocol(self.chia_ver):
             return True
         return False
 
