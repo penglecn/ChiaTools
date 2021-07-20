@@ -278,7 +278,7 @@ class HPoolMineWidget(QWidget, Ui_HPoolMineWidget):
         paths = ''
 
         for folder_obj in config['hdd_folders']:
-            if not folder_obj['mine']:
+            if not folder_obj['mine'] or folder_obj['new_plot']:
                 continue
             folder = folder_obj['folder']
             if paths:

@@ -719,7 +719,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
                 else:
                     item.setText(index, f'{task.current_sub_task.hdd_folder}(自动)')
             else:
-                item.setText(index, task.hdd_folder)
+                item.setText(index, task.current_sub_task.hdd_folder)
 
         index += 1
         item.setBackground(index, QBrush(QColor('#ffffff')))

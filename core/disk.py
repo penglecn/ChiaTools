@@ -47,18 +47,23 @@ class DiskOperation(QThread):
             'opt': opt,
         })
 
-    def updateSSDDriverSpaces(self, folders):
+    def updateSSDDriverSpaces(self, drivers):
         self.add_operation('updateSSDDriverSpaces', {
-            'folders': folders,
+            'drivers': drivers,
         })
 
-    def updateHDDDriverSpaces(self, folders):
+    def updateHDDDriverSpaces(self, drivers):
         self.add_operation('updateHDDDriverSpaces', {
-            'folders': folders,
+            'drivers': drivers,
         })
 
-    def updateTotalSpaces(self, folders):
+    def updateTotalSpaces(self, drivers):
         self.add_operation('updateTotalSpaces', {
+            'drivers': drivers,
+        })
+
+    def updateFolderPlotCount(self, folders):
+        self.add_operation('updateFolderPlotCount', {
             'folders': folders,
         })
 
@@ -94,52 +99,56 @@ class DiskOperation(QThread):
                 self.run_updateTotalSpaces(opt)
             elif name == 'updatePlotTotalInfo':
                 self.run_updatePlotTotalInfo(opt)
+            elif name == 'updateFolderPlotCount':
+                self.run_updateFolderPlotCount(opt)
 
             self.signalResult.emit(name, opt)
 
     def run_updateDriverSpaces(self, opt):
-        folders = opt['folders']
+        drivers = opt['drivers']
 
         result = {}
-        for folder in folders:
+        for driver in drivers:
             folder_usage = {'used': 0, 'free': 0, 'total': 0, 'percent': 0}
 
             try:
-                usage = psutil.disk_usage(folder)
+                usage = psutil.disk_usage(driver)
                 folder_usage['used'] = usage.used
                 folder_usage['free'] = usage.free
                 folder_usage['total'] = usage.total
                 folder_usage['percent'] = usage.percent
 
-                set_disk_usage(folder, usage)
+                set_disk_usage(driver, usage)
             except:
                 pass
 
-            folder_usage['plots_info'] = self.get_folder_plots_info(folder)
+            # folder_usage['plots_info'] = self.get_folder_plots_info(driver)
 
-            result[folder] = folder_usage
+            result[driver] = folder_usage
 
         opt['result'] = result
 
     def run_updateTotalSpaces(self, opt):
-        folders = opt['folders']
+        drivers = opt['drivers']
 
         total_space = total_free = total_used = 0
 
+        driver_count = 0
         total_size = 0
         total_count = 0
         yesterday_count = 0
         today_count = 0
 
         try:
-            for folder in folders:
-                if os.path.exists(folder):
-                    usage = psutil.disk_usage(folder)
+            for driver in drivers:
+                if os.path.exists(driver):
+                    usage = psutil.disk_usage(driver)
                     total_space += usage.total
                     total_used += usage.used
                     total_free += usage.free
 
-                    info = self.get_folder_plots_info(folder)
+                    info = self.get_folder_plots_info(driver)
+                    driver_count += 1
                     total_size += info['total_size']
                     total_count += info['total_count']
                     yesterday_count += info['yesterday_count']
@@ -148,6 +157,7 @@ class DiskOperation(QThread):
             pass
 
         opt['result'] = {
+            'driver_count': driver_count,
             'total_space': total_space,
             'total_free': total_free,
             'total_used': total_used,
@@ -181,6 +191,23 @@ class DiskOperation(QThread):
             'total_count': total_count,
             'yesterday_count': yesterday_count,
             'today_count': today_count,
+        }
+
+    def run_updateFolderPlotCount(self, opt):
+        folders = opt['folders']
+
+        folders_plot_info = {}
+        for folder in folders:
+            info = self.get_folder_plots_info(folder)
+            if info is None:
+                continue
+            folders_plot_info[folder] = {
+                'total_count': info['total_count'],
+                'total_size': info['total_size']
+            }
+
+        opt['result'] = {
+            'folders_plot_info': folders_plot_info
         }
 
     def get_folder_plots_info(self, folder):
