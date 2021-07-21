@@ -120,18 +120,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.comboSSD.addItem(task.ssd_folder, task.ssd_folder)
             self.comboSSD.setDisabled(True)
 
-            current_index = 0
-            self.comboHDD.addItem('自动', 'auto')
-            for hdd_folder_obj in config['hdd_folders']:
-                folder = hdd_folder_obj['folder']
-                text = self.get_folder_display_text(folder)
-                if folder == task.hdd_folder:
-                    current_index = self.comboHDD.count()
-                self.comboHDD.addItem(text, folder)
-            if self.task.auto_hdd_folder:
-                self.comboHDD.setCurrentIndex(0)
-            else:
-                self.comboHDD.setCurrentIndex(current_index)
+            self.load_hdd(last_folder='' if self.task.auto_hdd_folder else task.hdd_folder)
 
             self.select_wallet(task.fpk, task.ppk, task.nft)
             self.change_wallet()
@@ -183,15 +172,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                 self.comboSSD.addItem(text, ssd_folder)
             self.comboSSD.setCurrentIndex(current_index)
 
-            current_index = 0
-            self.comboHDD.addItem('自动', 'auto')
-            for hdd_folder_obj in config['hdd_folders']:
-                folder = hdd_folder_obj['folder']
-                text = self.get_folder_display_text(folder)
-                if folder == CreatePlotDialog.last_hdd_folder:
-                    current_index = self.comboHDD.count()
-                self.comboHDD.addItem(text, folder)
-            self.comboHDD.setCurrentIndex(current_index)
+            self.load_hdd(last_folder=CreatePlotDialog.last_hdd_folder)
 
             fpk = ''
             ppk = ''
@@ -263,6 +244,18 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         if not self.modify and self.chia_exe and not CreatePlotDialog.wallets:
             self.reload_wallets()
 
+    def load_hdd(self, last_folder=''):
+        config = get_config()
+        current_index = 0
+        self.comboHDD.addItem('自动', 'auto')
+        for hdd_folder_obj in config['hdd_folders']:
+            folder = hdd_folder_obj['folder']
+            text = self.get_folder_display_text(folder, hdd_folder_obj['new_plot'])
+            if last_folder and folder == last_folder:
+                current_index = self.comboHDD.count()
+            self.comboHDD.addItem(text, folder)
+        self.comboHDD.setCurrentIndex(current_index)
+
     def select_wallet(self, _fpk, _ppk, _nft):
         fp = None
         for _fp in CreatePlotDialog.wallets:
@@ -280,13 +273,19 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             self.custom_ppk = _ppk
             self.custom_nft = _nft
 
-    def get_folder_display_text(self, folder):
+    def get_folder_display_text(self, folder, new_plot=None):
         text = folder
         if os.path.exists(folder):
             usage = get_disk_usage(folder)
             text += f" ({size_to_str(usage.free)}空闲)"
         else:
             text += " (不存在)"
+
+        if new_plot is True:
+            text += " (新图)"
+        elif new_plot is False:
+            text += " (旧图)"
+
         return text
 
     def load_temp2(self):
@@ -736,6 +735,13 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         self.update_tip_text()
 
+    def is_hdd_folder_new_plot(self, hdd_folder):
+        config = get_config()
+        for hdd_folder_obj in config['hdd_folders']:
+            if hdd_folder_obj['folder'] == hdd_folder:
+                return hdd_folder_obj['new_plot']
+        return False
+
     def accept_modify(self):
         thread_num = self.spinThreadNum.value()
         memory_size = self.spinMemory.value()
@@ -838,32 +844,44 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             QMessageBox.information(self, '提示', '最终目录不存在')
             return
 
-        if not fpk:
-            QMessageBox.information(self, '提示', '请输入fpk')
-            return
-
-        if not ppk:
-            QMessageBox.information(self, '提示', '请输入ppk')
-            return
-
-        if cmdline == self.chia_exe and not is_chia_support_new_protocol(self.chia_ver):
-            if QMessageBox.information(self, '提示', '确定要使用旧协议吗？\n当前的钱包版本不支持新协议，P出的图只能使用旧协议。想要使用新协议，需要升级钱包。',
-                                       QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
-                return
-        elif not nft:
-            if QMessageBox.information(self, '提示', '确定要使用旧协议吗？\n没有NFT合约地址，P出的图只能使用旧协议。想要使用新协议，需要到钱包软件中创建NFT合约地址。',
-                                       QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
-                return
-
         if fpk.startswith('0x'):
             fpk = fpk[2:]
         if ppk.startswith('0x'):
             ppk = ppk[2:]
 
+        if not fpk:
+            QMessageBox.information(self, '提示', '请输入fpk')
+            return
+
+        if not nft and not ppk:
+            QMessageBox.information(self, '提示', '请输入ppk或者NFT合约地址')
+            return
+
+        new_plot = True
+        if cmdline == self.chia_exe and not is_chia_support_new_protocol(self.chia_ver):
+            new_plot = False
+            if QMessageBox.information(self, '提示', '确定要使用旧协议吗？\n当前的钱包版本不支持新协议，P出的图只能使用旧协议。想要使用新协议，需要升级钱包。',
+                                       QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                return
+        elif not nft:
+            new_plot = False
+            if QMessageBox.information(self, '提示', '确定要使用旧协议吗？\n没有NFT合约地址，P出的图只能使用旧协议。想要使用新协议，需要到钱包软件中创建NFT合约地址。',
+                                       QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                return
+
+        if hdd_folder != 'auto':
+            hdd_folder_new_plot = self.is_hdd_folder_new_plot(hdd_folder)
+            if hdd_folder_new_plot != new_plot:
+                def new_old(_new_old):
+                    return '新' if _new_old else '旧'
+                msg = f'正在创建的是{new_old(new_plot)}图，但是最终目录{hdd_folder}是用来存放{new_old(hdd_folder_new_plot)}图的，请检查。'
+                QMessageBox.information(self, '提示', msg)
+                return
+
         if len(fpk) != 96:
             QMessageBox.information(self, '提示', 'fpk格式错误，请检查')
             return
-        if len(ppk) != 96:
+        if ppk and len(ppk) != 96:
             QMessageBox.information(self, '提示', 'ppk格式错误，请检查')
             return
 

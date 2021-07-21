@@ -147,7 +147,7 @@
        <item>
         <widget class="QTreeWidget" name="treeHDD">
          <property name="rootIsDecorated">
-          <bool>false</bool>
+          <bool>true</bool>
          </property>
          <property name="sortingEnabled">
           <bool>false</bool>

@@ -61,7 +61,7 @@ class Ui_FoldersWidget(object):
         self.horizontalLayout_3.addWidget(self.labelPlotsInfo)
         self.verticalLayout_4.addLayout(self.horizontalLayout_3)
         self.treeHDD = QtWidgets.QTreeWidget(self.groupBox_2)
-        self.treeHDD.setRootIsDecorated(False)
+        self.treeHDD.setRootIsDecorated(True)
         self.treeHDD.setObjectName("treeHDD")
         self.treeHDD.headerItem().setTextAlignment(1, QtCore.Qt.AlignCenter)
         self.treeHDD.headerItem().setTextAlignment(2, QtCore.Qt.AlignCenter)
