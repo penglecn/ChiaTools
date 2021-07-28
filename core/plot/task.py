@@ -104,7 +104,7 @@ class PlotTask(QObject):
 
         self.do_next()
 
-    def do_next(self):
+    def do_next(self, check_able_to_next=True):
         if self.auto_hdd_folder:
             self.able_to_next = PlotTaskManager.choise_available_hdd_folder(self.k) != ''
         else:
@@ -118,7 +118,7 @@ class PlotTask(QObject):
                 self.current_task_index += 1
                 self.current_sub_task.worker.start()
                 self.signalNewSubTask.emit(self, self.current_sub_task)
-        elif self.able_to_next:
+        elif check_able_to_next and self.able_to_next:
             self.signalSubTaskDone.emit(self, self.current_sub_task)
 
             new_sub_task = PlotSubTask(self, self.count)

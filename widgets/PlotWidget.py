@@ -459,7 +459,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         elif action == action_continue:
             if task.finish:
                 task.next_stop = False
-                task.do_next()
+                task.do_next(check_able_to_next=False)
         elif action == action_next_stop:
             task.next_stop = not task.next_stop
         elif action == action_locate_temp:
