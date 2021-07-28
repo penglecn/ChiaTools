@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>778</width>
-    <height>533</height>
+    <width>1047</width>
+    <height>618</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -101,6 +101,13 @@
       <widget class="QCheckBox" name="checkBoxNextWhenFullyComplete">
        <property name="text">
         <string>等待任务100%后再执行下一轮</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBoxAutoDeleteOldPlot">
+       <property name="text">
+        <string>自动删旧图</string>
        </property>
       </widget>
      </item>

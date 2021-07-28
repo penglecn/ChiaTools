@@ -109,6 +109,8 @@ class HPoolMineWidget(QWidget, Ui_HPoolMineWidget):
     def checkMineLog(self, text):
         if 'The operation completed successfully.' in text:
             return False
+        if '操作成功完成' in text:
+            return False
 
         consume_max = 1000
 

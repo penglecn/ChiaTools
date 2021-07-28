@@ -14,6 +14,7 @@ import platform
 from config import get_config
 from utils.lock import RWlock
 from core.disk import get_disk_usage
+from core.driver import HDDFolders
 import random
 from utils.chia.pos import get_plot_id_and_memo
 from utils import get_k_size, get_k_temp_size, size_to_str
@@ -1013,6 +1014,8 @@ class PlotWorker(QThread):
 
         args = self.build_args()
 
+        config = get_config()
+
         while True:
             delay_remain = self.task.delay_remain()
 
@@ -1043,9 +1046,23 @@ class PlotWorker(QThread):
                 time.sleep(1)
                 continue
 
+            hdd_folders = HDDFolders()
             if self.task.auto_hdd_folder:
                 available_hdd_folder = PlotTaskManager.choise_available_hdd_folder(self.sub_task.k, self)
-                if not self.task.able_to_next or not available_hdd_folder:
+
+                if not available_hdd_folder and 'auto_delete_old_plot' in config and \
+                        config['auto_delete_old_plot']:
+                    self.task.able_to_next, available_hdd_folder = hdd_folders.delete_for_plot(k=self.task.k)
+                    if not self.task.able_to_next:
+                        self.sub_task.end_time = datetime.now()
+                        for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
+                            rest_sub_task = self.task.sub_tasks[i]
+                            rest_sub_task.success = False
+                            rest_sub_task.status = '删除旧图失败'
+                            rest_sub_task.finish = True
+                            self.updateTask(sub_task=rest_sub_task)
+                        break
+                else:
                     self.sub_task.end_time = datetime.now()
                     for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
                         rest_sub_task = self.task.sub_tasks[i]
@@ -1056,14 +1073,27 @@ class PlotWorker(QThread):
                     break
                 self.sub_task.hdd_folder = available_hdd_folder
             elif not self.task.able_to_next:
-                self.sub_task.end_time = datetime.now()
-                for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
-                    rest_sub_task = self.task.sub_tasks[i]
-                    rest_sub_task.success = False
-                    rest_sub_task.status = '硬盘已满'
-                    rest_sub_task.finish = True
-                    self.updateTask(sub_task=rest_sub_task)
-                break
+                if 'auto_delete_old_plot' in config and config['auto_delete_old_plot'] and \
+                        hdd_folders.is_folder_have_old_plot(self.task.hdd_folder, k=self.task.k):
+                    self.task.able_to_next, _ = hdd_folders.delete_for_plot_in_folder(self.task.hdd_folder, k=self.task.k)
+                    if not self.task.able_to_next:
+                        self.sub_task.end_time = datetime.now()
+                        for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
+                            rest_sub_task = self.task.sub_tasks[i]
+                            rest_sub_task.success = False
+                            rest_sub_task.status = '删除旧图失败'
+                            rest_sub_task.finish = True
+                            self.updateTask(sub_task=rest_sub_task)
+                        break
+                else:
+                    self.sub_task.end_time = datetime.now()
+                    for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
+                        rest_sub_task = self.task.sub_tasks[i]
+                        rest_sub_task.success = False
+                        rest_sub_task.status = '硬盘已满'
+                        rest_sub_task.finish = True
+                        self.updateTask(sub_task=rest_sub_task)
+                    break
 
             args.append('-d')
 

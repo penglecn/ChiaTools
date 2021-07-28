@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_PlotWidget(object):
     def setupUi(self, PlotWidget):
         PlotWidget.setObjectName("PlotWidget")
-        PlotWidget.resize(778, 533)
+        PlotWidget.resize(1047, 618)
         self.verticalLayout = QtWidgets.QVBoxLayout(PlotWidget)
         self.verticalLayout.setObjectName("verticalLayout")
         self.treePlot = QtWidgets.QTreeWidget(PlotWidget)
@@ -40,6 +40,9 @@ class Ui_PlotWidget(object):
         self.checkBoxNextWhenFullyComplete = QtWidgets.QCheckBox(PlotWidget)
         self.checkBoxNextWhenFullyComplete.setObjectName("checkBoxNextWhenFullyComplete")
         self.horizontalLayout_4.addWidget(self.checkBoxNextWhenFullyComplete)
+        self.checkBoxAutoDeleteOldPlot = QtWidgets.QCheckBox(PlotWidget)
+        self.checkBoxAutoDeleteOldPlot.setObjectName("checkBoxAutoDeleteOldPlot")
+        self.horizontalLayout_4.addWidget(self.checkBoxAutoDeleteOldPlot)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_4.addItem(spacerItem)
         self.buttonCreateBatchPlots = QtWidgets.QPushButton(PlotWidget)
@@ -82,5 +85,6 @@ class Ui_PlotWidget(object):
         self.checkBoxTotalLimit.setText(_translate("PlotWidget", "限制总并发数量"))
         self.spinBoxTotalCount.setSuffix(_translate("PlotWidget", "个"))
         self.checkBoxNextWhenFullyComplete.setText(_translate("PlotWidget", "等待任务100%后再执行下一轮"))
+        self.checkBoxAutoDeleteOldPlot.setText(_translate("PlotWidget", "自动删旧图"))
         self.buttonCreateBatchPlots.setText(_translate("PlotWidget", "批量创建任务"))
         self.buttonCreatePlot.setText(_translate("PlotWidget", "创建任务"))
