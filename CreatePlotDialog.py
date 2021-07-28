@@ -784,6 +784,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         return
 
     def accept(self) -> None:
+        config = get_config()
+
         fpk = self.editFpk.toPlainText()
         ppk = self.editPpk.toPlainText()
         nft = self.editNft.toPlainText()
@@ -892,6 +894,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
             QMessageBox.information(self, '提示', f'当前系统资源无法创建批量任务')
             return
 
+        able_to_start = True
         if hdd_folder != 'auto':
             hdd_usage = get_disk_usage(hdd_folder)
 
@@ -901,8 +904,11 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
             k_size = get_k_size(k)
             if not is_debug() and hdd_usage.free < k_size:
-                if QMessageBox.information(self, '提示', f'最终目录的空间不足{size_to_str(k_size)}，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
-                    return
+                auto_delete_old_plot = 'auto_delete_old_plot' in config and config['auto_delete_old_plot']
+                able_to_start = False
+                if not new_plot or not auto_delete_old_plot:
+                    if QMessageBox.information(self, '提示', f'最终目录的空间不足{size_to_str(k_size)}，确定要继续吗？', QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
+                        return
 
         config = get_config()
 
@@ -946,6 +952,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                                     specify_count=specify_count, count=number, thread_num=thread_num,
                                     memory_size=memory_size, delay=delay)
             if task:
+                task.able_to_next = able_to_start
                 self.result = [task]
 
         if not self.result:
