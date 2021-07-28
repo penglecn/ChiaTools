@@ -64,6 +64,10 @@ class PlotTask(QObject):
 
         self.connect_signal()
 
+    @property
+    def is_new_plot(self):
+        return self.nft != ''
+
     def connect_signal(self):
         self.signalMakingPlot.connect(self.makingPlot)
         self.signalNewPlot.connect(self.newPlot)
@@ -106,7 +110,7 @@ class PlotTask(QObject):
 
     def do_next(self, check_able_to_next=True):
         if self.auto_hdd_folder:
-            self.able_to_next = PlotTaskManager.choise_available_hdd_folder(self.k) != ''
+            self.able_to_next = PlotTaskManager.choise_available_hdd_folder(self.k, self.is_new_plot) != ''
         else:
             self.able_to_next = PlotTaskManager.is_task_able_to_next(self)
 
@@ -1053,11 +1057,12 @@ class PlotWorker(QThread):
 
             hdd_folders = HDDFolders()
             if self.task.auto_hdd_folder:
-                available_hdd_folder = PlotTaskManager.choise_available_hdd_folder(self.sub_task.k, self)
+                available_hdd_folder = PlotTaskManager.choise_available_hdd_folder(self.sub_task.k,
+                                                                                   self.task.is_new_plot, self)
 
-                if not available_hdd_folder and 'auto_delete_old_plot' in config and \
+                if self.task.is_new_plot and not available_hdd_folder and 'auto_delete_old_plot' in config and \
                         config['auto_delete_old_plot']:
-                    self.task.able_to_next, available_hdd_folder = hdd_folders.delete_for_plot(k=self.task.k)
+                    self.task.able_to_next, available_hdd_folder = hdd_folders.delete_for_plot_auto(k=self.task.k)
                     if not self.task.able_to_next:
                         self.sub_task.end_time = datetime.now()
                         for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
@@ -1078,9 +1083,10 @@ class PlotWorker(QThread):
                     break
                 self.sub_task.hdd_folder = available_hdd_folder
             elif not self.task.able_to_next:
-                if 'auto_delete_old_plot' in config and config['auto_delete_old_plot'] and \
-                        hdd_folders.is_folder_have_old_plot(self.task.hdd_folder, k=self.task.k):
-                    self.task.able_to_next, _ = hdd_folders.delete_for_plot_in_folder(self.task.hdd_folder, k=self.task.k)
+                driver = os.path.splitdrive(self.task.hdd_folder)[0]
+                if self.task.is_new_plot and 'auto_delete_old_plot' in config and config['auto_delete_old_plot'] and \
+                        hdd_folders.is_driver_have_old_plot(driver, k=self.task.k):
+                    self.task.able_to_next, _ = hdd_folders.delete_for_plot_in_driver(driver, k=self.task.k)
                     if not self.task.able_to_next:
                         self.sub_task.end_time = datetime.now()
                         for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
@@ -1255,7 +1261,7 @@ class PlotTaskManager(QObject):
     @staticmethod
     def is_task_able_to_next(task: PlotTask, except_worker=None):
         if is_debug():
-            return True
+            return False
 
         running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
 
@@ -1273,13 +1279,18 @@ class PlotTaskManager(QObject):
         return free > get_k_size(task.k)
 
     @staticmethod
-    def choise_available_hdd_folder(k, except_worker=None):
+    def choise_available_hdd_folder(k, new_plot, except_worker=None):
+        if is_debug():
+            return ''
+
         running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
 
         available_folders = []
         config = get_config()
         for hdd_folder_obj in config['hdd_folders']:
             folder = hdd_folder_obj['folder']
+            if new_plot != hdd_folder_obj['new_plot']:
+                continue
             if not os.path.exists(folder):
                 continue
             usage = get_disk_usage(folder)
