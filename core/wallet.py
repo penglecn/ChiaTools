@@ -51,7 +51,7 @@ class WalletManager(QThread):
 
             text = text.rstrip()
 
-            if text.startswith('P2 singleton address'):
+            if text.startswith('P2 singleton address') or text.startswith('Pool contract address'):
                 r = re.compile(r': (.*)')
                 found = re.findall(r, text)
                 if found:
