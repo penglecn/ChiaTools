@@ -97,7 +97,7 @@ class HPoolMineWidget(QWidget, Ui_HPoolMineWidget):
     def slotDiskOperation(self, name, opt):
         result = opt['result']
 
-        if name == 'updatePlotTotalInfo':
+        if name == 'updateMiningPlotTotalInfo':
             yesterday_count = result['yesterday_count']
             today_count = result['today_count']
             total_count = result['total_count']

@@ -57,9 +57,10 @@ class DiskOperation(QThread):
             'drivers': drivers,
         })
 
-    def updateTotalSpaces(self, drivers):
+    def updateTotalSpaces(self, drivers, folders):
         self.add_operation('updateTotalSpaces', {
             'drivers': drivers,
+            'folders': folders,
         })
 
     def updateFolderPlotCount(self, folders):
@@ -84,7 +85,9 @@ class DiskOperation(QThread):
                 folder = folder_obj['folder']
                 folders.append(folder)
 
-        self.updatePlotTotalInfo(folders)
+        self.add_operation('updateMiningPlotTotalInfo', {
+            'folders': folders,
+        })
 
     def run(self):
         while True:
@@ -97,7 +100,7 @@ class DiskOperation(QThread):
                 self.run_updateDriverSpaces(opt)
             elif name == 'updateTotalSpaces':
                 self.run_updateTotalSpaces(opt)
-            elif name == 'updatePlotTotalInfo':
+            elif name == 'updatePlotTotalInfo' or name == 'updateMiningPlotTotalInfo':
                 self.run_updatePlotTotalInfo(opt)
             elif name == 'updateFolderPlotCount':
                 self.run_updateFolderPlotCount(opt)
@@ -130,6 +133,7 @@ class DiskOperation(QThread):
 
     def run_updateTotalSpaces(self, opt):
         drivers = opt['drivers']
+        folders = opt['folders']
 
         total_space = total_free = total_used = 0
 
@@ -142,17 +146,18 @@ class DiskOperation(QThread):
         try:
             for driver in drivers:
                 if os.path.exists(driver):
+                    driver_count += 1
                     usage = psutil.disk_usage(driver)
                     total_space += usage.total
                     total_used += usage.used
                     total_free += usage.free
 
-                    info = self.get_folder_plots_info(driver)
-                    driver_count += 1
-                    total_size += info['total_size']
-                    total_count += info['total_count']
-                    yesterday_count += info['yesterday_count']
-                    today_count += info['today_count']
+            for folder in folders:
+                info = self.get_folder_plots_info(folder)
+                total_size += info['total_size']
+                total_count += info['total_count']
+                yesterday_count += info['yesterday_count']
+                today_count += info['today_count']
         except:
             pass
 

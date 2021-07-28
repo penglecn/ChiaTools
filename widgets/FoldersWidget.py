@@ -497,7 +497,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         disk_operation.updateHDDDriverSpaces(self.getHDDDrivers())
 
     def updateHDDTotalSpaces(self):
-        disk_operation.updateTotalSpaces(self.getHDDDrivers())
+        disk_operation.updateTotalSpaces(self.getHDDDrivers(), self.getHDDFolders())
 
     def updateFolderPlotCount(self):
         disk_operation.updateFolderPlotCount(self.getHDDFolders())
