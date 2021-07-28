@@ -1072,7 +1072,7 @@ class PlotWorker(QThread):
                             rest_sub_task.finish = True
                             self.updateTask(sub_task=rest_sub_task)
                         break
-                else:
+                elif not available_hdd_folder:
                     self.sub_task.end_time = datetime.now()
                     for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
                         rest_sub_task = self.task.sub_tasks[i]
