@@ -110,6 +110,11 @@ class PlotTask(QObject):
         else:
             self.able_to_next = PlotTaskManager.is_task_able_to_next(self)
 
+        able_to_next = self.able_to_next
+
+        if not check_able_to_next:
+            able_to_next = True
+
         if self.specify_count:
             if self.current_task_index + 1 >= self.count:
                 return False
@@ -118,7 +123,7 @@ class PlotTask(QObject):
                 self.current_task_index += 1
                 self.current_sub_task.worker.start()
                 self.signalNewSubTask.emit(self, self.current_sub_task)
-        elif check_able_to_next and self.able_to_next:
+        elif able_to_next:
             self.signalSubTaskDone.emit(self, self.current_sub_task)
 
             new_sub_task = PlotSubTask(self, self.count)
