@@ -3,7 +3,7 @@ import random
 
 import core
 from config import get_config
-from utils import get_k_size
+from utils import get_k_size, size_to_k, size_to_k32_count
 from core.disk import get_disk_usage
 
 
@@ -73,8 +73,9 @@ class HDDFolders(object):
 
         return folders
 
-    def delete_for_plot_in_folder(self, folder, k=32):
-        k_size = get_k_size(k)
+    def delete_for_plot_in_folder(self, folder, need_size):
+        need_count = size_to_k32_count(need_size)
+
         folder_files = []
         try:
             folder_files = os.listdir(folder)
@@ -82,6 +83,7 @@ class HDDFolders(object):
             pass
 
         deleted_size = 0
+        deleted_count = 0
         for fn in folder_files:
             if fn.endswith('.plot'):
                 plot_fn = os.path.join(folder, fn)
@@ -90,9 +92,12 @@ class HDDFolders(object):
                     if plot_size == 0 and core.is_debug():
                         plot_size = get_k_size(32)
 
+                    k32_plot_size = size_to_k32_count(plot_size)
+
                     os.remove(plot_fn)
                     deleted_size += plot_size
-                    if deleted_size >= k_size:
+                    deleted_count += k32_plot_size
+                    if deleted_count >= need_count:
                         return True, deleted_size
                 except:
                     pass
@@ -122,7 +127,7 @@ class HDDFolders(object):
             if not self.is_folder_have_plot(folder, need_size):
                 continue
 
-            _, deleted_size = self.delete_for_plot_in_folder(folder, need_size)
+            _, deleted_size = self.delete_for_plot_in_folder(folder, need_size=need_size)
             free_space += deleted_size
 
             if free_space >= need_size:
@@ -161,7 +166,9 @@ class HDDFolders(object):
         return have_old and have_new
 
     def is_folder_have_plot(self, folder, need_size):
-        old_size = 0
+        old_k32_count = 0
+
+        need_count = size_to_k32_count(need_size)
 
         try:
             for fn in os.listdir(folder):
@@ -171,8 +178,10 @@ class HDDFolders(object):
                     if plot_size == 0 and core.is_debug():
                         plot_size = get_k_size(32)
 
-                    old_size += plot_size
-                    if old_size >= need_size:
+                    k32_plot_count = size_to_k32_count(plot_size)
+
+                    old_k32_count += k32_plot_count
+                    if old_k32_count >= need_count:
                         return True
         except:
             pass
@@ -182,9 +191,15 @@ class HDDFolders(object):
         if driver not in self.drivers:
             return False
 
-        for folder_obj in self.drivers[driver]:
-            old_size = 0
+        free_space = 0
+        usage = get_disk_usage(driver, no_cache=True)
+        if usage:
+            free_space = usage.free
 
+        if free_space >= need_size:
+            return True
+
+        for folder_obj in self.drivers[driver]:
             if folder_obj['new_plot']:
                 continue
 
@@ -197,8 +212,8 @@ class HDDFolders(object):
                         if plot_size == 0 and core.is_debug():
                             plot_size = get_k_size(32)
 
-                        old_size += plot_size
-                        if old_size >= need_size:
+                        free_space += plot_size
+                        if free_space >= need_size:
                             return True
             except:
                 pass

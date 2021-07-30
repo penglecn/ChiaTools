@@ -20,6 +20,38 @@ def get_k_size(k):
     return 0
 
 
+def size_to_k(size):
+    error_value = 1024*1024*1024
+
+    if abs(get_k_size(32) - size) < error_value:
+        return 32
+    elif abs(get_k_size(33) - size) < error_value:
+        return 33
+    elif abs(get_k_size(34) - size) < error_value:
+        return 34
+    elif abs(get_k_size(35) - size) < error_value:
+        return 35
+    return 0
+
+
+def size_to_k32_count(size):
+    k = size_to_k(size)
+    if k == 0:
+        return 0
+
+    m = {
+        32: 1,
+        33: 2,
+        34: 3,
+        35: 4,
+    }
+
+    if k in m:
+        return m[k]
+
+    return 0
+
+
 def get_k_temp_size(k):
     if k == 32:
         return 2 ** 30 * 239
