@@ -644,11 +644,8 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         pass
 
     def restartMine(self, log=''):
-        if not self.main_window:
-            return
-
-        self.main_window.tabHPoolMineWidget.restartMine(log)
-        self.main_window.tabHuobiPoolMineWidget.restartMine(log)
+        if self.main_window:
+            self.main_window.restartMine(log)
 
     def updateTaskStatus(self, task: PlotTask, sub_task: PlotSubTask):
         item = self.getItemFromTask(task)
@@ -739,19 +736,19 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         else:
             delay = task.delay_remain()
             item.setText(index, task.status)
-            if task.finish:
-                if task.success:
+            if task.current_sub_task.finish:
+                if task.current_sub_task.success:
                     color = QColor('#50c350')
                 else:
                     color = QColor('#e86363')
                 item.setBackground(index, QBrush(color))
                 item.setForeground(index, QBrush(QColor(255, 255, 255)))
-            elif task.suspend:
+            elif task.current_sub_task.suspend:
                 if task.current_sub_task.suspend_time:
                     item.setText(index, f'暂停{seconds_to_str(task.current_sub_task.suspend_remain_time)}')
                 else:
                     item.setText(index, '已暂停')
-            elif task.abnormal:
+            elif task.current_sub_task.abnormal:
                 item.setBackground(index, QBrush(QColor('#ffb949')))
                 item.setForeground(index, QBrush(QColor(255, 255, 255)))
             elif delay:

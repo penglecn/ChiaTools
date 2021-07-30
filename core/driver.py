@@ -4,6 +4,7 @@ import random
 import core
 from config import get_config
 from utils import get_k_size
+from core.disk import get_disk_usage
 
 
 class HDDFolders(object):
@@ -98,33 +99,35 @@ class HDDFolders(object):
 
         return False, deleted_size
 
-    def delete_for_plot_in_driver(self, driver, k=32):
+    def free_space_for_plot_in_driver(self, driver, need_size):
         if driver not in self.drivers:
             return False, ''
 
-        k_size = get_k_size(k)
+        free_space = 0
+        usage = get_disk_usage(driver, no_cache=True)
+        if usage is not None:
+            free_space = usage.free
+            if core.is_debug():
+                free_space = 1024*1024*1024*5
+
         for folder_obj in self.drivers[driver]:
             if folder_obj['new_plot']:
                 continue
+
             folder = folder_obj['folder']
-            if not self.is_folder_have_plot(folder, k):
-                continue
-            _, deleted_size = self.delete_for_plot_in_folder(folder, k)
-            if deleted_size >= k_size:
+
+            if free_space >= need_size:
                 return True, folder
-        return False, ''
 
-    def delete_for_plot_auto(self, k=32):
-        drivers = self.get_drivers()
-        random.shuffle(drivers)
-
-        for driver in drivers:
-            if not self.is_driver_have_old_and_new_folders(driver):
+            if not self.is_folder_have_plot(folder, need_size):
                 continue
-            success, folder = self.delete_for_plot_in_driver(driver, k)
-            if success:
-                return success, self.get_driver_new_folder(driver)
 
+            _, deleted_size = self.delete_for_plot_in_folder(folder, need_size)
+            free_space += deleted_size
+
+            if free_space >= need_size:
+                return True, folder
+            need_size -= deleted_size
         return False, ''
 
     def get_driver_old_folder(self, driver):
@@ -157,8 +160,7 @@ class HDDFolders(object):
 
         return have_old and have_new
 
-    def is_folder_have_plot(self, folder, k=32):
-        k_size = get_k_size(k)
+    def is_folder_have_plot(self, folder, need_size):
         old_size = 0
 
         try:
@@ -170,17 +172,15 @@ class HDDFolders(object):
                         plot_size = get_k_size(32)
 
                     old_size += plot_size
-                    if old_size >= k_size:
+                    if old_size >= need_size:
                         return True
         except:
             pass
         return False
 
-    def is_driver_have_old_plot(self, driver, k=32):
+    def is_driver_have_old_plot(self, driver, need_size):
         if driver not in self.drivers:
             return False
-
-        for_k_size = get_k_size(k)
 
         for folder_obj in self.drivers[driver]:
             old_size = 0
@@ -198,7 +198,7 @@ class HDDFolders(object):
                             plot_size = get_k_size(32)
 
                         old_size += plot_size
-                        if old_size >= for_k_size:
+                        if old_size >= need_size:
                             return True
             except:
                 pass

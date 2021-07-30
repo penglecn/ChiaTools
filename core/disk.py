@@ -18,9 +18,12 @@ def set_disk_usage(folder, usage):
     __disk_cache_lock.write_release()
 
 
-def get_disk_usage(folder):
+def get_disk_usage(folder, no_cache=False):
     __disk_cache_lock.read_acquire()
-    if folder not in __disk_usage_cache:
+    cache = __disk_usage_cache
+    if no_cache:
+        cache = {}
+    if folder not in cache:
         __disk_cache_lock.read_release()
         try:
             usage = psutil.disk_usage(folder)
@@ -28,7 +31,7 @@ def get_disk_usage(folder):
         except:
             return None
     else:
-        usage = __disk_usage_cache[folder]
+        usage = cache[folder]
         __disk_cache_lock.read_release()
 
     return usage
@@ -80,12 +83,28 @@ class DiskOperation(QThread):
 
         if 'hdd_folders' in config:
             for folder_obj in config['hdd_folders']:
-                if not folder_obj['mine']:
+                if not folder_obj['mine'] or folder_obj['new_plot']:
                     continue
                 folder = folder_obj['folder']
                 folders.append(folder)
 
         self.add_operation('updateMiningPlotTotalInfo', {
+            'folders': folders,
+        })
+
+    def updateMiningNewPlotTotalInfo(self):
+        config = get_config()
+
+        folders = []
+
+        if 'hdd_folders' in config:
+            for folder_obj in config['hdd_folders']:
+                if not folder_obj['mine'] or not folder_obj['new_plot']:
+                    continue
+                folder = folder_obj['folder']
+                folders.append(folder)
+
+        self.add_operation('updateMiningNewPlotTotalInfo', {
             'folders': folders,
         })
 
@@ -100,7 +119,9 @@ class DiskOperation(QThread):
                 self.run_updateDriverSpaces(opt)
             elif name == 'updateTotalSpaces':
                 self.run_updateTotalSpaces(opt)
-            elif name == 'updatePlotTotalInfo' or name == 'updateMiningPlotTotalInfo':
+            elif name == 'updatePlotTotalInfo' or \
+                    name == 'updateMiningPlotTotalInfo' or \
+                    name == 'updateMiningNewPlotTotalInfo':
                 self.run_updatePlotTotalInfo(opt)
             elif name == 'updateFolderPlotCount':
                 self.run_updateFolderPlotCount(opt)

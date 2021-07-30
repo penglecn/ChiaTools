@@ -13,6 +13,7 @@ from core.wallet import wallet_manager
 from core import BASE_DIR
 from config import save_config, get_config
 from subprocess import run
+from utils import is_auto_launch, setup_auto_launch
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -29,7 +30,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.tabFoldersWidget.setMainWindow(self)
         self.tabPlotWidget.setMainWindow(self)
-        self.tabHPoolMineWidget.setMainWindow(self)
+        self.tabHPoolOGMineWidget.setMainWindow(self)
+        self.tabHPoolPPMineWidget.setMainWindow(self)
         self.tabHuobiPoolMineWidget.setMainWindow(self)
 
         config = get_config()
@@ -80,8 +82,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         config = get_config()
         config['current_tab_index'] = index
 
+    def restartMine(self, log=''):
+        self.tabHPoolOGMineWidget.restartMine(log)
+        self.tabHPoolPPMineWidget.restartMine(log)
+        self.tabHuobiPoolMineWidget.restartMine(log)
+
+    def setup_auto_launch(self):
+        config = get_config()
+
+        hpool_auto_start = 'hpool_auto_mine' in config and config['hpool_auto_mine']
+        hpool_pp_auto_mine = 'hpool_pp_auto_mine' in config and config['hpool_pp_auto_mine']
+        huobipool_auto_mine = 'huobipool_auto_mine' in config and config['huobipool_auto_mine']
+
+        setup_auto_launch(hpool_auto_start or hpool_pp_auto_mine or huobipool_auto_mine)
+
     def closeEvent(self, event):
-        if self.tabHPoolMineWidget.mine_process or self.tabHuobiPoolMineWidget.mine_process:
+        if self.tabHPoolOGMineWidget.mine_process or \
+                self.tabHPoolPPMineWidget.mine_process or \
+                self.tabHuobiPoolMineWidget.mine_process:
             QMessageBox.warning(self, '提示', '请先停止挖矿')
             event.ignore()
             return

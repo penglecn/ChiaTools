@@ -953,6 +953,8 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
                                     memory_size=memory_size, delay=delay)
             if task:
                 task.able_to_next = able_to_start
+                if is_debug():
+                    task.able_to_next = False
                 self.result = [task]
 
         if not self.result:

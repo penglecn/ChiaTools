@@ -36,8 +36,6 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
         self.signalMineLog.connect(self.outputMineLog)
         self.signalMineTerminated.connect(self.mineTerminated)
 
-        self.timerIdUpdateSpace = self.startTimer(1000 * 10)
-
         config = get_config()
 
         if 'huobipool_miner_name' in config:
@@ -74,9 +72,7 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
     def timerEvent(self, event: QTimerEvent) -> None:
         timer = event.timerId()
 
-        if timer == self.timerIdUpdateSpace:
-            disk_operation.updateMiningPlotTotalInfo()
-        elif timer == self.timerIdCheckProcess:
+        if timer == self.timerIdCheckProcess:
             if not self.mine_process:
                 return
             if self.last_mine_log_time == 0:
@@ -188,9 +184,8 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
         config['huobipool_auto_mine'] = auto_start
         save_config()
 
-        hpool_auto_start = config['hpool_auto_mine'] if 'hpool_auto_mine' in config else False
-
-        setup_auto_launch(auto_start or hpool_auto_start)
+        if self.main_window:
+            self.main_window.setup_auto_launch()
 
     def clickStartMine(self):
         if not self.mine_process:
@@ -225,7 +220,8 @@ class HuobiPoolMineWidget(QWidget, Ui_HuobiPoolMineWidget):
             QMessageBox.information(self, '提示', 'Access-ID长度是36，请检查')
             return
 
-        if manual and self.main_window.tabHPoolMineWidget.mine_process:
+        if manual and (self.main_window.tabHPoolOGMineWidget.mine_process or
+                       self.main_window.tabHPoolPPMineWidget.mine_process):
             if QMessageBox.information(self, '警告',
                                        f"确定要双挖吗？\n双挖后一旦爆块，矿池将会对你进行永久性封号！",
                                        QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:

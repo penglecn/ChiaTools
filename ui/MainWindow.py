@@ -39,15 +39,25 @@ class Ui_MainWindow(object):
         self.tabPlotWidget.setObjectName("tabPlotWidget")
         self.verticalLayout_5.addWidget(self.tabPlotWidget)
         self.tabWidget.addTab(self.tabPlot, "")
-        self.tabHPoolMine = QtWidgets.QWidget()
-        self.tabHPoolMine.setObjectName("tabHPoolMine")
-        self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.tabHPoolMine)
+        self.tabHPoolOGMine = QtWidgets.QWidget()
+        self.tabHPoolOGMine.setObjectName("tabHPoolOGMine")
+        self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.tabHPoolOGMine)
         self.verticalLayout_6.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
-        self.tabHPoolMineWidget = HPoolMineWidget(self.tabHPoolMine)
-        self.tabHPoolMineWidget.setObjectName("tabHPoolMineWidget")
-        self.verticalLayout_6.addWidget(self.tabHPoolMineWidget)
-        self.tabWidget.addTab(self.tabHPoolMine, "")
+        self.tabHPoolOGMineWidget = HPoolOGMineWidget(self.tabHPoolOGMine)
+        self.tabHPoolOGMineWidget.setObjectName("tabHPoolOGMineWidget")
+        self.verticalLayout_6.addWidget(self.tabHPoolOGMineWidget)
+        self.tabWidget.addTab(self.tabHPoolOGMine, "")
+        self.tabHPoolPPMine = QtWidgets.QWidget()
+        self.tabHPoolPPMine.setObjectName("tabHPoolPPMine")
+        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.tabHPoolPPMine)
+        self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_7.setSpacing(0)
+        self.verticalLayout_7.setObjectName("verticalLayout_7")
+        self.tabHPoolPPMineWidget = HPoolPPMineWidget(self.tabHPoolPPMine)
+        self.tabHPoolPPMineWidget.setObjectName("tabHPoolPPMineWidget")
+        self.verticalLayout_7.addWidget(self.tabHPoolPPMineWidget)
+        self.tabWidget.addTab(self.tabHPoolPPMine, "")
         self.tabHuobiPoolMine = QtWidgets.QWidget()
         self.tabHuobiPoolMine.setObjectName("tabHuobiPoolMine")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.tabHuobiPoolMine)
@@ -72,7 +82,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -80,11 +90,13 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "ChiaTools"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabFolders), _translate("MainWindow", "硬盘"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabPlot), _translate("MainWindow", "P图任务"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHPoolMine), _translate("MainWindow", "HPool矿池挖矿"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHPoolOGMine), _translate("MainWindow", "HPoolOG老矿池挖矿"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHPoolPPMine), _translate("MainWindow", "HPoolPP新矿池挖矿"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHuobiPoolMine), _translate("MainWindow", "火币矿池挖矿"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabAbout), _translate("MainWindow", "关于"))
 from widgets.AboutWidget import AboutWidget
 from widgets.FoldersWidget import FoldersWidget
-from widgets.HPoolMineWidget import HPoolMineWidget
+from widgets.HPoolOGMineWidget import HPoolOGMineWidget
+from widgets.HPoolPPMineWidget import HPoolPPMineWidget
 from widgets.HuobiPoolMineWidget import HuobiPoolMineWidget
 from widgets.PlotWidget import PlotWidget

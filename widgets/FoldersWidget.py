@@ -41,6 +41,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         self.main_window = win
 
         disk_operation.updateMiningPlotTotalInfo()
+        disk_operation.updateMiningNewPlotTotalInfo()
 
     def loadFolders(self):
         config = get_config()
@@ -93,6 +94,9 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         timer = event.timerId()
 
         if timer == self.timerIdUpdateSpace:
+            disk_operation.updateMiningPlotTotalInfo()
+            disk_operation.updateMiningNewPlotTotalInfo()
+
             self.updateSSDSpaces()
             self.updateHDDSpaces()
 
@@ -193,6 +197,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         self.restartMine()
 
         disk_operation.updateMiningPlotTotalInfo()
+        disk_operation.updateMiningNewPlotTotalInfo()
 
     def clickAddSSDFolder(self):
         folder = QFileDialog.getExistingDirectory(directory=FoldersWidget.LastDirectory)
@@ -268,6 +273,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         self.restartMine()
 
         disk_operation.updateMiningPlotTotalInfo()
+        disk_operation.updateMiningNewPlotTotalInfo()
 
     def clickRemoveHDDFolder(self):
         indexes = self.treeHDD.selectedIndexes()
@@ -309,14 +315,12 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         self.restartMine()
 
         disk_operation.updateMiningPlotTotalInfo()
+        disk_operation.updateMiningNewPlotTotalInfo()
         self.updateFolderPlotCount()
 
     def restartMine(self, log=''):
-        if not self.main_window:
-            return
-
-        self.main_window.tabHPoolMineWidget.restartMine(log)
-        self.main_window.tabHuobiPoolMineWidget.restartMine(log)
+        if self.main_window:
+            self.main_window.restartMine(log)
 
     def slotDiskOperation(self, name, opt):
         result = opt['result']

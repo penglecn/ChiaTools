@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tabFolders">
        <attribute name="title">
@@ -64,9 +64,9 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tabHPoolMine">
+      <widget class="QWidget" name="tabHPoolOGMine">
        <attribute name="title">
-        <string>HPool矿池挖矿</string>
+        <string>HPoolOG老矿池挖矿</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <property name="leftMargin">
@@ -82,7 +82,32 @@
          <number>0</number>
         </property>
         <item>
-         <widget class="HPoolMineWidget" name="tabHPoolMineWidget" native="true"/>
+         <widget class="HPoolOGMineWidget" name="tabHPoolOGMineWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabHPoolPPMine">
+       <attribute name="title">
+        <string>HPoolPP新矿池挖矿</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_7">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="HPoolPPMineWidget" name="tabHPoolPPMineWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -155,9 +180,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>HPoolMineWidget</class>
+   <class>HPoolOGMineWidget</class>
    <extends>QWidget</extends>
-   <header>widgets.HPoolMineWidget</header>
+   <header>widgets.HPoolOGMineWidget</header>
    <container>1</container>
   </customwidget>
   <customwidget>
@@ -170,6 +195,12 @@
    <class>AboutWidget</class>
    <extends>QWidget</extends>
    <header>widgets.AboutWidget</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>HPoolPPMineWidget</class>
+   <extends>QWidget</extends>
+   <header>widgets.HPoolPPMineWidget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

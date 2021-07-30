@@ -23,6 +23,7 @@ from core.plotter import PLOTTER_CHIA_PLOT, PLOTTER_BUILTIN, PLOTTER_OFFICIAL
 
 class PlotTask(QObject):
     signalUpdateTask = pyqtSignal(object, object)
+    signalBeforeMakingPlot = pyqtSignal(object, object)
     signalMakingPlot = pyqtSignal(object, object)
     signalNewPlot = pyqtSignal(object, object)
     signalNewSubTask = pyqtSignal(object, object)
@@ -69,6 +70,7 @@ class PlotTask(QObject):
         return self.nft != ''
 
     def connect_signal(self):
+        self.signalBeforeMakingPlot.connect(self.beforeMakingPlot)
         self.signalMakingPlot.connect(self.makingPlot)
         self.signalNewPlot.connect(self.newPlot)
 
@@ -87,6 +89,27 @@ class PlotTask(QObject):
     def start(self):
         self.sub_tasks[0].worker.start()
 
+    def beforeMakingPlot(self, task, sub_task):
+        if not task.is_new_plot:
+            return
+
+        folder = sub_task.hdd_folder
+        driver = os.path.splitdrive(folder)[0]
+        usage = get_disk_usage(driver, no_cache=True)
+        if usage is None:
+            return
+
+        need_size = get_k_size(task.k)
+        if usage.free >= need_size:
+            return
+
+        hdd_folders = HDDFolders()
+
+        if not hdd_folders.is_driver_have_old_plot(driver, need_size=need_size):
+            return
+
+        hdd_folders.free_space_for_plot_in_driver(driver, need_size=need_size)
+
     def makingPlot(self, task, sub_task):
         if self.next_stop:
             return
@@ -96,7 +119,10 @@ class PlotTask(QObject):
         if 'next_when_fully_complete' in config and config['next_when_fully_complete']:
             return
 
-        self.do_next()
+        config = get_config()
+        free_space_for_plot = 'auto_delete_old_plot' in config and config['auto_delete_old_plot']
+
+        self.do_next(free_space_for_plot=free_space_for_plot and self.is_new_plot)
 
     def newPlot(self, task, sub_task):
         doing_next = task.current_sub_task != sub_task
@@ -106,13 +132,24 @@ class PlotTask(QObject):
         if self.next_stop:
             return
 
-        self.do_next()
+        config = get_config()
+        free_space_for_plot = 'auto_delete_old_plot' in config and config['auto_delete_old_plot']
 
-    def do_next(self, check_able_to_next=True):
+        self.do_next(free_space_for_plot=free_space_for_plot and self.is_new_plot)
+
+    def do_next(self, check_able_to_next=True, free_space_for_plot=False):
+        hdd_folders = HDDFolders()
+
         if self.auto_hdd_folder:
             self.able_to_next = PlotTaskManager.choise_available_hdd_folder(self.k, self.is_new_plot) != ''
+            if not self.able_to_next and PlotTaskManager.have_free_space_for_plot_auto(need_size=get_k_size(self.k)):
+                check_able_to_next = False
         else:
             self.able_to_next = PlotTaskManager.is_task_able_to_next(self)
+            driver = os.path.splitdrive(self.hdd_folder)[0]
+            if not self.able_to_next and free_space_for_plot and \
+                    hdd_folders.is_driver_have_old_plot(driver, need_size=get_k_size(self.k)):
+                check_able_to_next = False
 
         able_to_next = self.able_to_next
 
@@ -622,6 +659,8 @@ class PlotWorker(QThread):
                 base_progress = 75.000
                 max_progress = 99.000
                 total_bucket = self.sub_task.buckets - 1
+                if total_bucket - 1 == self.bucket:
+                    self.task.signalBeforeMakingPlot.emit(self.task, self.sub_task)
             else:
                 return
             # bucket_progress = 100 * self.bucket / total_bucket
@@ -754,6 +793,7 @@ class PlotWorker(QThread):
                     bucket = 2
                 elif 'Writing C2 table' in text:
                     bucket = 3
+                    self.task.signalBeforeMakingPlot.emit(self.task, self.sub_task)
                 elif 'Finished writing C2 table' in text:
                     bucket = 4
                 else:
@@ -1062,7 +1102,8 @@ class PlotWorker(QThread):
 
                 if self.task.is_new_plot and not available_hdd_folder and 'auto_delete_old_plot' in config and \
                         config['auto_delete_old_plot']:
-                    self.task.able_to_next, available_hdd_folder = hdd_folders.delete_for_plot_auto(k=self.task.k)
+                    self.task.able_to_next, available_hdd_folder = PlotTaskManager.free_space_for_plot_auto(
+                        need_size=get_k_size(self.task.k), except_worker=self)
                     if not self.task.able_to_next:
                         self.sub_task.end_time = datetime.now()
                         for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
@@ -1084,9 +1125,11 @@ class PlotWorker(QThread):
                 self.sub_task.hdd_folder = available_hdd_folder
             elif not self.task.able_to_next:
                 driver = os.path.splitdrive(self.task.hdd_folder)[0]
+                need_size = PlotTaskManager.get_driver_running_size(driver, self)
+                need_size += get_k_size(self.task.k)
                 if self.task.is_new_plot and 'auto_delete_old_plot' in config and config['auto_delete_old_plot'] and \
-                        hdd_folders.is_driver_have_old_plot(driver, k=self.task.k):
-                    self.task.able_to_next, _ = hdd_folders.delete_for_plot_in_driver(driver, k=self.task.k)
+                        hdd_folders.is_driver_have_old_plot(driver, need_size=need_size):
+                    self.task.able_to_next, _ = hdd_folders.free_space_for_plot_in_driver(driver, need_size=need_size)
                     if not self.task.able_to_next:
                         self.sub_task.end_time = datetime.now()
                         for i in range(self.task.current_task_index, len(self.task.sub_tasks)):
@@ -1218,6 +1261,7 @@ class PlotWorker(QThread):
 
 class PlotTaskManager(QObject):
     signalUpdateTask = pyqtSignal(object, object)
+    signalBeforeMakingPlot = pyqtSignal(object, object)
     signalMakingPlot = pyqtSignal(object, object)
     signalNewPlot = pyqtSignal(object, object)
     signalNewSubTask = pyqtSignal(object, object)
@@ -1257,6 +1301,57 @@ class PlotTaskManager(QObject):
                     running_folders.append((sub.k, sub.hdd_folder))
         PlotTaskManager.task_lock.read_release()
         return running_folders
+
+    @staticmethod
+    def get_driver_running_size(driver, except_worker=None):
+        running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
+
+        running_size = 0
+        for running_object in running_folders:
+            running_k = running_object[0]
+            running_folder = running_object[1]
+            running_driver = os.path.splitdrive(running_folder)[0]
+            if driver == running_driver:
+                running_size += get_k_size(running_k)
+
+        return running_size
+
+    @staticmethod
+    def free_space_for_plot_auto(need_size, except_worker=None):
+        hdd_folders = HDDFolders()
+
+        drivers = hdd_folders.get_drivers()
+        random.shuffle(drivers)
+
+        for driver in drivers:
+            if not hdd_folders.is_driver_have_old_and_new_folders(driver):
+                continue
+            running_size = PlotTaskManager.get_driver_running_size(driver, except_worker)
+
+            if not hdd_folders.is_driver_have_old_plot(driver, need_size=running_size + need_size):
+                continue
+
+            success, _ = hdd_folders.free_space_for_plot_in_driver(driver, running_size + need_size)
+            if success:
+                return success, hdd_folders.get_driver_new_folder(driver)
+
+        return False, ''
+
+    @staticmethod
+    def have_free_space_for_plot_auto(need_size, except_worker=None):
+        hdd_folders = HDDFolders()
+
+        drivers = hdd_folders.get_drivers()
+
+        for driver in drivers:
+            if not hdd_folders.is_driver_have_old_and_new_folders(driver):
+                continue
+            running_size = PlotTaskManager.get_driver_running_size(driver, except_worker)
+            if not hdd_folders.is_driver_have_old_plot(driver, need_size=running_size + need_size):
+                continue
+            return True
+
+        return False
 
     @staticmethod
     def is_task_able_to_next(task: PlotTask, except_worker=None):
@@ -1315,6 +1410,7 @@ class PlotTaskManager(QObject):
 
     def connect_task(self, task: PlotTask):
         task.signalUpdateTask.connect(self.signalUpdateTask)
+        task.signalBeforeMakingPlot.connect(self.signalBeforeMakingPlot)
         task.signalMakingPlot.connect(self.signalMakingPlot)
         task.signalNewPlot.connect(self.signalNewPlot)
         task.signalNewSubTask.connect(self.signalNewSubTask)
