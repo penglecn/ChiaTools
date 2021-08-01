@@ -13,25 +13,28 @@ __disk_cache_lock = RWlock()
 
 
 def set_disk_usage(folder, usage):
+    driver = os.path.splitdrive(folder)[0]
+
     __disk_cache_lock.write_acquire()
-    __disk_usage_cache[folder] = usage
+    __disk_usage_cache[driver] = usage
     __disk_cache_lock.write_release()
 
 
 def get_disk_usage(folder, no_cache=False):
+    driver = os.path.splitdrive(folder)[0]
     __disk_cache_lock.read_acquire()
     cache = __disk_usage_cache
     if no_cache:
         cache = {}
-    if folder not in cache:
+    if driver not in cache:
         __disk_cache_lock.read_release()
         try:
-            usage = psutil.disk_usage(folder)
-            set_disk_usage(folder, usage)
+            usage = psutil.disk_usage(driver)
+            set_disk_usage(driver, usage)
         except:
             return None
     else:
-        usage = cache[folder]
+        usage = cache[driver]
         __disk_cache_lock.read_release()
 
     return usage
