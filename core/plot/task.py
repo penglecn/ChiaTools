@@ -418,6 +418,12 @@ class PlotSubTask(QObject):
         return self.worker.process is not None
 
     @property
+    def copying(self):
+        if self.working and self.worker.copying:
+            return True
+        return False
+
+    @property
     def memory_used(self):
         if self.worker is None:
             return 0
@@ -973,7 +979,7 @@ class PlotWorker(QThread):
     def build_args(self):
         if is_debug():
             cmdline = os.path.join(BASE_DIR, 'bin', 'windows', 'plotter', 'test.exe')
-            return [cmdline, 'logs.txt', '500', '1000']
+            return [cmdline, 'logs.txt', '500', '10000']
 
         t = self.task
 
@@ -1361,8 +1367,8 @@ class PlotTaskManager(QObject):
 
     @staticmethod
     def is_task_able_to_next(task: PlotTask, except_worker=None):
-        if is_debug():
-            return False
+        # if is_debug():
+        #     return False
 
         running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
 
@@ -1381,8 +1387,8 @@ class PlotTaskManager(QObject):
 
     @staticmethod
     def choise_available_hdd_folder(k, new_plot, except_worker=None):
-        if is_debug():
-            return ''
+        # if is_debug():
+        #     return ''
 
         running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
 
@@ -1505,8 +1511,8 @@ class PlotTaskManager(QObject):
         phase1_count = 0
 
         for _task in PlotTaskManager.tasks:
-            if _task.working:
-                if _task.copying and not next_when_fully_complete:
+            if _task.current_sub_task.working:
+                if _task.current_sub_task.copying and not next_when_fully_complete:
                     continue
                 total_count += 1
                 if _task.phase == 1:
