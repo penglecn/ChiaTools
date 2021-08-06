@@ -42,11 +42,7 @@ class PlotCheckWorker(QThread):
 
         try:
             if self.process:
-                pos_process = self.get_pos_process()
                 self.process.terminate()
-                if pos_process:
-                    pos_process.resume()
-                    pos_process.terminate()
         except:
             pass
 
