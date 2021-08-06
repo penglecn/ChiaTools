@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="tabFolders">
        <attribute name="title">
@@ -136,6 +136,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tabPlotCheck">
+       <attribute name="title">
+        <string>Plot检查</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_8">
+        <item>
+         <widget class="PlotCheckWidget" name="tabPlotCheckWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="tabAbout">
        <attribute name="title">
         <string>关于</string>
@@ -201,6 +211,12 @@
    <class>HPoolPPMineWidget</class>
    <extends>QWidget</extends>
    <header>widgets.HPoolPPMineWidget</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PlotCheckWidget</class>
+   <extends>QWidget</extends>
+   <header>widgets.PlotCheckWidget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

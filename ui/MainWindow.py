@@ -68,6 +68,14 @@ class Ui_MainWindow(object):
         self.tabHuobiPoolMineWidget.setObjectName("tabHuobiPoolMineWidget")
         self.verticalLayout_3.addWidget(self.tabHuobiPoolMineWidget)
         self.tabWidget.addTab(self.tabHuobiPoolMine, "")
+        self.tabPlotCheck = QtWidgets.QWidget()
+        self.tabPlotCheck.setObjectName("tabPlotCheck")
+        self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.tabPlotCheck)
+        self.verticalLayout_8.setObjectName("verticalLayout_8")
+        self.tabPlotCheckWidget = PlotCheckWidget(self.tabPlotCheck)
+        self.tabPlotCheckWidget.setObjectName("tabPlotCheckWidget")
+        self.verticalLayout_8.addWidget(self.tabPlotCheckWidget)
+        self.tabWidget.addTab(self.tabPlotCheck, "")
         self.tabAbout = QtWidgets.QWidget()
         self.tabAbout.setObjectName("tabAbout")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.tabAbout)
@@ -82,7 +90,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(3)
+        self.tabWidget.setCurrentIndex(5)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -93,10 +101,12 @@ class Ui_MainWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHPoolOGMine), _translate("MainWindow", "HPoolOG老矿池挖矿"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHPoolPPMine), _translate("MainWindow", "HPoolPP新矿池挖矿"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabHuobiPoolMine), _translate("MainWindow", "火币矿池挖矿"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabPlotCheck), _translate("MainWindow", "Plot检查"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tabAbout), _translate("MainWindow", "关于"))
 from widgets.AboutWidget import AboutWidget
 from widgets.FoldersWidget import FoldersWidget
 from widgets.HPoolOGMineWidget import HPoolOGMineWidget
 from widgets.HPoolPPMineWidget import HPoolPPMineWidget
 from widgets.HuobiPoolMineWidget import HuobiPoolMineWidget
+from widgets.PlotCheckWidget import PlotCheckWidget
 from widgets.PlotWidget import PlotWidget
