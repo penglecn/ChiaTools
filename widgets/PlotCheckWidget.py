@@ -1,4 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu
+
+import core
 from ui.PlotCheckWidget import Ui_PlotCheckWidget
 from utils import get_official_chia_exe
 from core.plot.check import PlotCheckWorker, PlotInfo
@@ -16,6 +18,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         self.setupUi(self)
 
         self.treePlots.header().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.treePlots.header().setStretchLastSection(False)
         self.treePlots.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treePlots.customContextMenuRequested.connect(self.on_show_menu)
 
@@ -23,6 +26,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
 
         self.plots: dict = {}
         self.checked_count = 0
+        self.current_checking_plot_info: Optional[PlotInfo] = None
 
         self.worker: Optional[PlotCheckWorker] = None
 
@@ -31,35 +35,47 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         self.update_total()
 
     def on_show_menu(self, pos):
-        item: QTreeWidgetItem = self.treePlots.itemAt(pos)
-        index = self.treePlots.indexAt(pos)
-        if not item:
-            return
-        if not index:
+        items = self.treePlots.selectedItems()
+
+        if not items:
             return
 
-        pi: PlotInfo = item.data(0, Qt.UserRole)
+        plots = []
+
+        for item in items:
+            pi = item.data(0, Qt.UserRole)
+            plots.append(pi)
 
         menu = QMenu(self)
 
-        action_locate = menu.addAction(u"浏览文件")
+        action_locate = None
+        action_delete = None
+
+        if len(items) == 1:
+            action_locate = menu.addAction(u"浏览文件")
         action_delete = menu.addAction(u"删除")
 
         action = menu.exec(QCursor.pos())
 
+        if not action:
+            return
+
         if action == action_locate:
-            run('explorer /select, ' + pi.path)
+            run('explorer /select, ' + plots[0].path)
         elif action == action_delete:
-            if QMessageBox.information(self, '提示', f"确定要删除吗？\n删除后将无法恢复。",
+            if QMessageBox.information(self, '提示', f"确定要删除这{len(plots)}个文件吗？\n删除后将无法恢复。",
                                        QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                 return
-            try:
-                os.remove(pi.path)
-            except:
-                QMessageBox.information(self, '提示', f"删除文件，请检查文件是否被占用。")
-                return
-            self.treePlots.takeTopLevelItem(index)
-            del self.plots[pi.path]
+            for pi in plots:
+                try:
+                    os.remove(pi.path)
+                except:
+                    if not core.is_debug():
+                        QMessageBox.information(self, '提示', f"删除文件失败\n{pi.path}\n请检查文件是否被占用。")
+                        return
+                item = self.get_item(pi)
+                self.treePlots.takeTopLevelItem(self.treePlots.indexOfTopLevelItem(item))
+                del self.plots[pi.path]
 
     def on_start_check(self):
         if self.worker:
@@ -67,6 +83,12 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
             self.worker = None
             self.buttonStart.setText('开始检查')
             self.spinChallengeCount.setEnabled(True)
+
+            if self.current_checking_plot_info:
+                item = self.get_item(self.current_checking_plot_info)
+                self.current_checking_plot_info.status = ''
+                self.update_item(item, self.current_checking_plot_info)
+                self.current_checking_plot_info = None
             return
 
         chia_exe, chia_ver = get_official_chia_exe()
@@ -119,6 +141,8 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         pi.fpk = fpk
         pi.status = '检查中'
 
+        self.current_checking_plot_info = pi
+
         self.update_item(item, pi)
 
     def on_check_result(self, path, quality):
@@ -133,6 +157,8 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         pi.quality = quality
         pi.status = '完成'
 
+        self.current_checking_plot_info = None
+
         self.update_item(item, pi)
 
         self.checked_count += 1
@@ -142,6 +168,12 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         self.worker = None
         self.buttonStart.setText('开始检查')
         self.spinChallengeCount.setEnabled(True)
+
+        if self.current_checking_plot_info:
+            item = self.get_item(self.current_checking_plot_info)
+            self.current_checking_plot_info.status = '失败'
+            self.update_item(item, self.current_checking_plot_info)
+            self.current_checking_plot_info = None
 
     def add_item(self, plot_info: PlotInfo):
         item = QTreeWidgetItem()
@@ -176,3 +208,6 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
 
         index += 1
         item.setText(index, pi.ppk)
+
+        index += 1
+        item.setText(index, pi.path)

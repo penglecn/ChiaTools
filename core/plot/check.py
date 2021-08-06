@@ -3,6 +3,7 @@ from PyQt5.Qt import QThread
 from subprocess import Popen, PIPE, STDOUT, CREATE_NO_WINDOW
 import os
 import re
+from core import is_debug, BASE_DIR
 
 
 class PlotInfo(object):
@@ -109,10 +110,15 @@ class PlotCheckWorker(QThread):
         return line
 
     def run(self):
-        os.environ['ANSIBLE_FORCE_COLOR'] = "TRUE"
-
         args = [self.chia_exe, 'plots', 'check']
-        self.process = Popen(args, stdout=PIPE, stderr=STDOUT, cwd=os.path.dirname(self.chia_exe),
+        cwd = os.path.dirname(self.chia_exe)
+
+        if is_debug():
+            cmdline = os.path.join(BASE_DIR, 'bin', 'windows', 'plotter', 'test.exe')
+            cwd = os.path.dirname(cmdline)
+            args = [cmdline, 'check_result.txt', '5', '0']
+
+        self.process = Popen(args, stdout=PIPE, stderr=STDOUT, cwd=cwd,
                              creationflags=CREATE_NO_WINDOW)
 
         while True:

@@ -102,6 +102,27 @@
    </item>
    <item>
     <widget class="QTreeWidget" name="treePlots">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
      <property name="rootIsDecorated">
       <bool>false</bool>
      </property>
@@ -139,6 +160,11 @@
      <column>
       <property name="text">
        <string>ppk</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>路径</string>
       </property>
      </column>
     </widget>
