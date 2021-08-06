@@ -1,11 +1,11 @@
 from PyQt5.Qt import pyqtSignal
-from PyQt5.Qt import QThread, QObject
-from subprocess import Popen, PIPE, CREATE_NO_WINDOW
+from PyQt5.Qt import QThread
+from subprocess import Popen, PIPE, STDOUT, CREATE_NO_WINDOW
 import os
 import re
 
 
-class PlotInfo(QObject):
+class PlotInfo(object):
     def __init__(self):
         super().__init__()
 
@@ -106,9 +106,17 @@ class PlotCheckWorker(QThread):
                 self.signalCheckResult.emit(self.checking_plot_path, quality)
                 self.checking_plot_path = ''
 
+    def remove_escape_code(self, line):
+        found = re.findall(re.compile(r'(\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK])'), line)
+        for f in found:
+            line = line.replace(f[0], '')
+        return line
+
     def run(self):
+        os.environ['ANSIBLE_FORCE_COLOR'] = "TRUE"
+
         args = [self.chia_exe, 'plots', 'check']
-        self.process = Popen(args, stdout=PIPE, stderr=PIPE, cwd=os.path.dirname(self.chia_exe),
+        self.process = Popen(args, stdout=PIPE, stderr=STDOUT, cwd=os.path.dirname(self.chia_exe),
                              creationflags=CREATE_NO_WINDOW)
 
         while True:
@@ -118,6 +126,8 @@ class PlotCheckWorker(QThread):
                 break
 
             orig_text = line.decode('utf-8', errors='replace')
+            orig_text = self.remove_escape_code(orig_text)
+
             text = orig_text.rstrip()
 
             if text:
