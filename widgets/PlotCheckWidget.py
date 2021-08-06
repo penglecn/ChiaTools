@@ -32,7 +32,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
 
     def on_show_menu(self, pos):
         item: QTreeWidgetItem = self.treePlots.itemAt(pos)
-        index = self.treePlot.indexAt(pos)
+        index = self.treePlots.indexAt(pos)
         if not item:
             return
         if not index:
@@ -78,6 +78,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         self.treePlots.clear()
         self.plots.clear()
         self.checked_count = 0
+        self.update_total()
 
         self.buttonStart.setText('停止检查')
         self.spinChallengeCount.setEnabled(False)
@@ -95,7 +96,8 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         percent = 0
         if total_count:
             percent = self.checked_count * 100 / total_count
-        status = f'数量 {self.checked_count}/{total_count} 进度 {int(percent)}%'
+        status = f'数量{self.checked_count}/{total_count} 进度'
+        self.progressCheck.setValue(percent)
         self.labelTotal.setText(status)
 
     def on_found_plot(self, plot_info: PlotInfo):
