@@ -104,7 +104,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
 
         self.buttonStart.setText('停止检查')
         self.spinChallengeCount.setEnabled(False)
-        self.worker = PlotCheckWorker(chia_exe, chia_ver)
+        self.worker = PlotCheckWorker(chia_exe, chia_ver, self.spinChallengeCount.value())
 
         self.worker.signalFoundPlot.connect(self.on_found_plot)
         self.worker.signalCheckingPlot.connect(self.on_checking_plot)

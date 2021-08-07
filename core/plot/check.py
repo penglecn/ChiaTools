@@ -25,11 +25,12 @@ class PlotCheckWorker(QThread):
     signalCheckResult = pyqtSignal(str, str)
     signalFinish = pyqtSignal()
 
-    def __init__(self, chia_exe, chia_ver):
+    def __init__(self, chia_exe, chia_ver, challenge_count):
         super(PlotCheckWorker, self).__init__()
 
         self.chia_exe = chia_exe
         self.chia_ver = chia_ver
+        self.challenge_count = challenge_count
 
         self.stopping = False
         self.process = None
@@ -110,7 +111,7 @@ class PlotCheckWorker(QThread):
         return line
 
     def run(self):
-        args = [self.chia_exe, 'plots', 'check']
+        args = [self.chia_exe, 'plots', 'check', '-n', f'{self.challenge_count}']
         cwd = os.path.dirname(self.chia_exe)
 
         if is_debug():

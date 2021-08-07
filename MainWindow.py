@@ -109,5 +109,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             event.ignore()
             return
 
+        if self.tabPlotCheckWidget.worker:
+            QMessageBox.warning(self, '提示', '请先停止Plot检查')
+            event.ignore()
+            return
+
         PlotTaskManager.save_tasks()
         save_config()
