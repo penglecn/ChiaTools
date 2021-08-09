@@ -142,35 +142,6 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
                 driver_item = _item
                 break
 
-        def make_checkbox(slot, checked):
-            widget = QWidget()
-            layout = QHBoxLayout()
-            checkbox = QCheckBox()
-            checkbox.setChecked(checked)
-            checkbox.stateChanged.connect(slot)
-            layout.addWidget(checkbox)
-            layout.setAlignment(checkbox, Qt.AlignCenter)
-            layout.setContentsMargins(0, 0, 0, 0)
-            widget.setLayout(layout)
-
-            return checkbox, widget
-
-        def setup_folder_item(item: QTreeWidgetItem, mine, new_plot, setdown=False):
-            if setdown:
-                item.setData(1, Qt.UserRole, None)
-                self.treeHDD.setItemWidget(item, 1, None)
-                item.setData(2, Qt.UserRole, None)
-                self.treeHDD.setItemWidget(item, 2, None)
-                return
-
-            mine_checkbox, mine_widget = make_checkbox(self.saveHDDFolderChecks, mine)
-            item.setData(1, Qt.UserRole, mine_checkbox)
-            self.treeHDD.setItemWidget(item, 1, mine_widget)
-
-            new_plot_checkbox, new_plot_widget = make_checkbox(self.saveHDDFolderChecks, new_plot)
-            item.setData(2, Qt.UserRole, new_plot_checkbox)
-            self.treeHDD.setItemWidget(item, 2, new_plot_widget)
-
         if not driver_item:
             driver_item = QTreeWidgetItem()
             driver_item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
@@ -193,9 +164,9 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
                 mine_checkbox: QCheckBox = driver_item.data(1, Qt.UserRole)
                 new_plot_checkbox: QCheckBox = driver_item.data(2, Qt.UserRole)
-                setup_folder_item(driver_item, False, False, setdown=True)
+                self.setup_folder_item(driver_item, False, False, setdown=True)
                 driver_item.addChild(folder_item)
-                setup_folder_item(folder_item, mine=mine_checkbox.isChecked(), new_plot=new_plot_checkbox.isChecked())
+                self.setup_folder_item(folder_item, mine=mine_checkbox.isChecked(), new_plot=new_plot_checkbox.isChecked())
 
             driver_item.setText(0, driver)
             driver_item.setData(0, Qt.UserRole, 'driver')
@@ -209,11 +180,40 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             driver_item.addChild(folder_item)
             driver_item.setExpanded(True)
 
-        setup_folder_item(folder_item, mine=mine, new_plot=new_plot)
+        self.setup_folder_item(folder_item, mine=mine, new_plot=new_plot)
 
         self.treeHDD.sortByColumn(0, Qt.AscendingOrder)
 
         self.updateHDDSpaces()
+
+    def make_checkbox(self, slot, checked):
+        widget = QWidget()
+        layout = QHBoxLayout()
+        checkbox = QCheckBox()
+        checkbox.setChecked(checked)
+        checkbox.stateChanged.connect(slot)
+        layout.addWidget(checkbox)
+        layout.setAlignment(checkbox, Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+        widget.setLayout(layout)
+
+        return checkbox, widget
+
+    def setup_folder_item(self, item: QTreeWidgetItem, mine, new_plot, setdown=False):
+        if setdown:
+            item.setData(1, Qt.UserRole, None)
+            self.treeHDD.setItemWidget(item, 1, None)
+            item.setData(2, Qt.UserRole, None)
+            self.treeHDD.setItemWidget(item, 2, None)
+            return
+
+        mine_checkbox, mine_widget = self.make_checkbox(self.saveHDDFolderChecks, mine)
+        item.setData(1, Qt.UserRole, mine_checkbox)
+        self.treeHDD.setItemWidget(item, 1, mine_widget)
+
+        new_plot_checkbox, new_plot_widget = self.make_checkbox(self.saveHDDFolderChecks, new_plot)
+        item.setData(2, Qt.UserRole, new_plot_checkbox)
+        self.treeHDD.setItemWidget(item, 2, new_plot_widget)
 
     def saveHDDFolderChecks(self, i):
         def get_item_info(item: QTreeWidgetItem):
@@ -341,6 +341,8 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         folders_to_remove = []
 
         if is_root:
+            if item.data(0, Qt.UserRole) == 'folder':
+                folders_to_remove.append(item.text(0))
             for i in range(item.childCount()):
                 folder_item = item.child(i)
                 folders_to_remove.append(folder_item.text(0))
@@ -348,8 +350,18 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         else:
             folders_to_remove.append(item.text(0))
             parent.takeChild(parent.indexOfChild(item))
-            if parent.childCount() == 0:
-                self.treeHDD.takeTopLevelItem(self.treeHDD.indexOfTopLevelItem(parent))
+
+            if parent.childCount() == 1:
+                last_folder_item = parent.child(0)
+
+                mine_checkbox: QCheckBox = last_folder_item.data(1, Qt.UserRole)
+                new_plot_checkbox: QCheckBox = last_folder_item.data(2, Qt.UserRole)
+                self.setup_folder_item(parent, mine_checkbox.isChecked(), new_plot_checkbox.isChecked())
+                parent.setIcon(0, self.style().standardIcon(QStyle.SP_DirIcon))
+                parent.setData(0, Qt.UserRole, 'folder')
+                parent.setText(0, last_folder_item.text(0))
+
+                parent.takeChild(parent.indexOfChild(last_folder_item))
 
         self.treeHDD.sortByColumn(0, Qt.AscendingOrder)
 
