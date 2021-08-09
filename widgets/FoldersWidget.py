@@ -66,7 +66,10 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         for i in range(self.treeHDD.topLevelItemCount()):
             driver_item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
-            drivers.append(driver_item.text(0))
+            driver = driver_item.text(0)
+            if driver_item.data(0, Qt.UserRole) == 'folder':
+                driver = os.path.splitdrive(driver)[0]
+            drivers.append(driver)
 
         return drivers
 
@@ -84,6 +87,8 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         for i in range(self.treeHDD.topLevelItemCount()):
             driver_item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
+            if driver_item.data(0, Qt.UserRole) == 'folder':
+                folders.append(driver_item.text(0))
             for j in range(driver_item.childCount()):
                 folder_item = driver_item.child(j)
                 folders.append(folder_item.text(0))
@@ -128,28 +133,14 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         for i in range(self.treeHDD.topLevelItemCount()):
             _item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
             _item_driver = _item.text(0)
+            _item_type = _item.data(0, Qt.UserRole)
+
+            if _item_type == 'folder':
+                _item_driver = os.path.splitdrive(_item_driver)[0]
+
             if _item_driver == driver:
                 driver_item = _item
                 break
-
-        if not driver_item:
-            driver_item = QTreeWidgetItem()
-            driver_item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
-            driver_item.setText(0, driver)
-
-            driver_item.setIcon(0, self.style().standardIcon(QStyle.SP_DriveHDIcon))
-
-            self.treeHDD.addTopLevelItem(driver_item)
-
-            self.treeHDD.setItemWidget(driver_item, 7, QProgressBar())
-
-        folder_item = QTreeWidgetItem()
-        folder_item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
-        folder_item.setText(0, folder)
-        folder_item.setIcon(0, self.style().standardIcon(QStyle.SP_DirIcon))
-
-        driver_item.addChild(folder_item)
-        driver_item.setExpanded(True)
 
         def make_checkbox(slot, checked):
             widget = QWidget()
@@ -164,27 +155,87 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
             return checkbox, widget
 
-        mine_checkbox, mine_widget = make_checkbox(self.saveHDDFolderChecks, mine)
-        folder_item.setData(1, Qt.UserRole, mine_checkbox)
-        self.treeHDD.setItemWidget(folder_item, 1, mine_widget)
+        def setup_folder_item(item: QTreeWidgetItem, mine, new_plot, setdown=False):
+            if setdown:
+                item.setData(1, Qt.UserRole, None)
+                self.treeHDD.setItemWidget(item, 1, None)
+                item.setData(2, Qt.UserRole, None)
+                self.treeHDD.setItemWidget(item, 2, None)
+                return
 
-        new_plot_checkbox, new_plot_widget = make_checkbox(self.saveHDDFolderChecks, new_plot)
-        folder_item.setData(2, Qt.UserRole, new_plot_checkbox)
-        self.treeHDD.setItemWidget(folder_item, 2, new_plot_widget)
+            mine_checkbox, mine_widget = make_checkbox(self.saveHDDFolderChecks, mine)
+            item.setData(1, Qt.UserRole, mine_checkbox)
+            self.treeHDD.setItemWidget(item, 1, mine_widget)
+
+            new_plot_checkbox, new_plot_widget = make_checkbox(self.saveHDDFolderChecks, new_plot)
+            item.setData(2, Qt.UserRole, new_plot_checkbox)
+            self.treeHDD.setItemWidget(item, 2, new_plot_widget)
+
+        if not driver_item:
+            driver_item = QTreeWidgetItem()
+            driver_item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
+            driver_item.setText(0, folder)
+            driver_item.setData(0, Qt.UserRole, 'folder')
+
+            driver_item.setIcon(0, self.style().standardIcon(QStyle.SP_DirIcon))
+
+            self.treeHDD.addTopLevelItem(driver_item)
+
+            self.treeHDD.setItemWidget(driver_item, 7, QProgressBar())
+
+            folder_item = driver_item
+        else:
+            if driver_item.data(0, Qt.UserRole) == 'folder':
+                folder_item = QTreeWidgetItem()
+                folder_item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
+                folder_item.setText(0, driver_item.text(0))
+                folder_item.setIcon(0, self.style().standardIcon(QStyle.SP_DirIcon))
+
+                mine_checkbox: QCheckBox = driver_item.data(1, Qt.UserRole)
+                new_plot_checkbox: QCheckBox = driver_item.data(2, Qt.UserRole)
+                setup_folder_item(driver_item, False, False, setdown=True)
+                driver_item.addChild(folder_item)
+                setup_folder_item(folder_item, mine=mine_checkbox.isChecked(), new_plot=new_plot_checkbox.isChecked())
+
+            driver_item.setText(0, driver)
+            driver_item.setData(0, Qt.UserRole, 'driver')
+            driver_item.setIcon(0, self.style().standardIcon(QStyle.SP_DriveHDIcon))
+
+            folder_item = QTreeWidgetItem()
+            folder_item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
+            folder_item.setText(0, folder)
+            folder_item.setIcon(0, self.style().standardIcon(QStyle.SP_DirIcon))
+
+            driver_item.addChild(folder_item)
+            driver_item.setExpanded(True)
+
+        setup_folder_item(folder_item, mine=mine, new_plot=new_plot)
 
         self.treeHDD.sortByColumn(0, Qt.AscendingOrder)
 
         self.updateHDDSpaces()
 
     def saveHDDFolderChecks(self, i):
+        def get_item_info(item: QTreeWidgetItem):
+            mine_checkbox: QCheckBox = item.data(1, Qt.UserRole)
+            new_plot_checkbox: QCheckBox = item.data(2, Qt.UserRole)
+            folder = item.text(0)
+            return folder, mine_checkbox, new_plot_checkbox
+
         hdd_folders = []
         for i in range(self.treeHDD.topLevelItemCount()):
             driver_item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
+            if driver_item.data(0, Qt.UserRole) == 'folder':
+                folder, mine_checkbox, new_plot_checkbox = get_item_info(driver_item)
+                hdd_folders.append({
+                    'folder': folder,
+                    'mine': mine_checkbox.isChecked(),
+                    'new_plot': new_plot_checkbox.isChecked()
+                })
+
             for j in range(driver_item.childCount()):
                 folder_item = driver_item.child(j)
-                mine_checkbox: QCheckBox = folder_item.data(1, Qt.UserRole)
-                new_plot_checkbox: QCheckBox = folder_item.data(2, Qt.UserRole)
-                folder = folder_item.text(0)
+                folder, mine_checkbox, new_plot_checkbox = get_item_info(folder_item)
                 hdd_folders.append({
                     'folder': folder,
                     'mine': mine_checkbox.isChecked(),
@@ -355,13 +406,18 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
     def getHDDDriverItem(self, driver):
         for i in range(self.treeHDD.topLevelItemCount()):
             driver_item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
-            if driver_item.text(0) == driver:
+            _driver = driver_item.text(0)
+            if driver_item.data(0, Qt.UserRole) == 'folder':
+                _driver = os.path.splitdrive(_driver)[0]
+            if _driver == driver:
                 return driver_item
         return None
 
     def getHDDFolderItem(self, folder):
         for i in range(self.treeHDD.topLevelItemCount()):
             driver_item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
+            if driver_item.data(0, Qt.UserRole) == 'folder' and driver_item.text(0) == folder:
+                return driver_item
             for j in range(driver_item.childCount()):
                 folder_item = driver_item.child(j)
                 if folder_item.text(0) == folder:
@@ -402,7 +458,10 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             driver_item: Optional[QTreeWidgetItem] = None
             for i in range(self.treeHDD.topLevelItemCount()):
                 _item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
-                if _item.text(0) == driver:
+                _item_driver = _item.text(0)
+                if _item.data(0, Qt.UserRole) == 'folder':
+                    _item_driver = os.path.splitdrive(_item_driver)[0]
+                if _item_driver == driver:
                     driver_item = _item
                     break
 
@@ -410,40 +469,6 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
                 continue
 
             self.updateHDDDriverItem(driver_item, usage)
-
-    def updateHDDItems(self, folders):
-        drivers = {}
-
-        for folder, usage in folders:
-            driver, _ = os.path.splitdrive(folder)
-            if driver not in drivers:
-                drivers[driver] = []
-            drivers[driver].append((folder, usage))
-
-        for driver, folders in enumerate(drivers):
-            driver_item: Optional[QTreeWidgetItem] = None
-            for i in range(self.treeHDD.topLevelItemCount()):
-                _item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
-                if _item.text(0) == driver:
-                    driver_item = _item
-                    break
-
-            if driver_item is None:
-                continue
-
-            for info in folders:
-                folder, usage = info
-                folder_item = None
-                for i in range(driver_item.childCount()):
-                    _item: QTreeWidgetItem = driver_item.child(i)
-                    if _item.text(0) == folder:
-                        folder_item = _item
-                        break
-
-                if folder_item is None:
-                    continue
-
-                self.updateHDDItem(folder_item, usage)
 
     def updateHDDDriverItem(self, item: QTreeWidgetItem, usage):
         used = usage['used']
