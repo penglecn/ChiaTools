@@ -1,236 +1,324 @@
+import random
+
 from PyQt5.Qt import pyqtSignal
-from PyQt5.Qt import QThread
+from PyQt5.Qt import QThread, QObject
 from subprocess import Popen, PIPE, STDOUT, CREATE_NO_WINDOW
 import re
 from core import is_debug, BASE_DIR
 from time import time
 import os
+import time
+from typing import Optional
+from queue import Queue, Empty
 from chiapos import Verifier, DiskProver
 from utils.chia.hash import std_hash
 from utils.chia.plotting.plot_tools import parse_plot_info
+from utils import size_to_k
 
 
-def get_plot_info(plot_path):
-    try:
-        prover = DiskProver(plot_path)
-        (
-            is_pool_contract_puzzle_hash,
-            pool_public_key_or_puzzle_hash,
-            farmer_public_key,
-            local_master_sk,
-        ) = parse_plot_info(prover.get_memo())
+class FolderInfo(object):
+    def __init__(self):
+        super().__init__()
+        self.folder = ''
+        self.plots = []
+        self.current_checking_plot = None
 
-        pool_public_key = ''
-        pool_contract_puzzle_hash = ''
+    def clear(self):
+        self.plots.clear()
+        self.current_checking_plot = None
 
-        if is_pool_contract_puzzle_hash:
-            pool_contract_puzzle_hash = pool_public_key_or_puzzle_hash
-        else:
-            pool_public_key = pool_public_key_or_puzzle_hash
+    @property
+    def plot_count(self):
+        return len(self.plots)
 
-        return {
-            'path': plot_path,
-            'prover': prover,
-            'farmer_public_key': farmer_public_key,
-            'pool_public_key': pool_public_key,
-            'pool_contract_puzzle_hash': pool_contract_puzzle_hash,
-            'local_master_sk': local_master_sk,
-            'plot_size': os.path.getsize(plot_path),
-        }
-    except:
-        return None
+    @property
+    def checked_plot_count(self):
+        count = 0
+        for plot in self.plots:
+            if plot.finish:
+                count += 1
+        return count
 
-
-def check_plot_quality(plot, challenges=30):
-    if isinstance(plot, str):
-        plot = get_plot_info(plot)
-        if not plot:
-            return False, 0
-
-    v = Verifier()
-
-    prover = plot['prover']
-
-    total_proofs = 0
-    caught_exception: bool = False
-    for i in range(challenges):
-        challenge = std_hash(i.to_bytes(32, "big"))
-        try:
-            # quality_start_time = int(round(time() * 1000))
-            for index, quality_str in enumerate(prover.get_qualities_for_challenge(challenge)):
-                # quality_spent_time = int(round(time() * 1000)) - quality_start_time
-                # if quality_spent_time > 5000:
-                #     log.warning(
-                #         f"\tLooking up qualities took: {quality_spent_time} ms. This should be below 5 seconds "
-                #         f"to minimize risk of losing rewards."
-                #     )
-                # else:
-                #     log.info(f"\tLooking up qualities took: {quality_spent_time} ms.")
-
-                # Other plot errors cause get_full_proof or validate_proof to throw an AssertionError
-                try:
-                    # proof_start_time = int(round(time() * 1000))
-                    proof = prover.get_full_proof(challenge, index, True)
-                    # proof_spent_time = int(round(time() * 1000)) - proof_start_time
-                    # if proof_spent_time > 15000:
-                    #     log.warning(
-                    #         f"\tFinding proof took: {proof_spent_time} ms. This should be below 15 seconds "
-                    #         f"to minimize risk of losing rewards."
-                    #     )
-                    # else:
-                    #     log.info(f"\tFinding proof took: {proof_spent_time} ms")
-                    total_proofs += 1
-                    ver_quality_str = v.validate_proof(prover.get_id(), prover.get_size(), challenge, proof)
-                    assert quality_str == ver_quality_str
-                except AssertionError as e:
-                    # log.error(f"{type(e)}: {e} error in proving/verifying for plot {path}")
-                    caught_exception = True
-                quality_start_time = int(round(time() * 1000))
-        except KeyboardInterrupt:
-            # log.warning("Interrupted, closing")
-            return False, 0
-        except SystemExit:
-            # log.warning("System is shutting down.")
-            return False, 0
-        except Exception as e:
-            # log.error(f"{type(e)}: {e} error in getting challenge qualities for plot {path}")
-            caught_exception = True
-        if caught_exception is True:
-            break
-    if total_proofs > 0 and caught_exception is False:
-        return True, round(total_proofs/float(challenges), 4)
-    return False, round(total_proofs/float(challenges), 4)
+    @property
+    def progress(self):
+        if self.plot_count == 0:
+            return 0
+        return self.checked_plot_count * 100 / self.plot_count
 
 
 class PlotInfo(object):
-    def __init__(self):
+    def __init__(self, index):
         super().__init__()
+
+        self.index = index
+        self.folder_info: Optional[FolderInfo] = None
+        self.prover: Optional[DiskProver] = None
 
         self.filename = ''
         self.path = ''
         self.k = ''
-        self.ppk = ''
         self.fpk = ''
-        self.status = ''
+        self.ppk = ''
+        self.contract = ''
         self.quality = ''
+        self.status = ''
+        self.finish = False
+        self.success = False
+        self.progress = 0
 
 
 class PlotCheckWorker(QThread):
-    signalFoundPlot = pyqtSignal(PlotInfo)
-    signalCheckingPlot = pyqtSignal(str, str, str)
-    signalCheckResult = pyqtSignal(str, str)
+    signalFoundPlot = pyqtSignal(FolderInfo, PlotInfo)
+    signalUpdateFolder = pyqtSignal(FolderInfo)
+    signalUpdatePlot = pyqtSignal(PlotInfo)
+
     signalFinish = pyqtSignal()
 
-    def __init__(self, chia_exe, chia_ver, challenge_count):
+    def __init__(self, *args, **kwargs):
         super(PlotCheckWorker, self).__init__()
 
-        self.chia_exe = chia_exe
-        self.chia_ver = chia_ver
-        self.challenge_count = challenge_count
+        self.queue: Optional[Queue] = None
+        self.folder_infos = []
+        self.plots = []
+        self.check_quality = False
+        self.challenge_count = 30
+        self.cancel = False
 
-        self.stopping = False
-        self.process = None
+        if 'queue' in kwargs:
+            self.queue: Queue = kwargs['queue']
+        if 'folder_infos' in kwargs:
+            self.folder_infos = kwargs['folder_infos']
+        if 'plots' in kwargs:
+            self.plots = kwargs['plots']
+        if 'check_quality' in kwargs:
+            self.check_quality = kwargs['check_quality']
+        if 'challenge_count' in kwargs:
+            self.challenge_count = kwargs['challenge_count']
 
-        self.checking_plot_path = ''
-        self.checking_plot_ppk = ''
-        self.checking_plot_fpk = ''
+    def run(self):
+        if self.queue:
+            self.run_queue(self.queue)
+        elif self.folder_infos:
+            self.run_folders(self.folder_infos)
 
-    def stop(self):
-        self.stopping = True
+    def run_queue(self, queue: Queue):
+        while True:
+            try:
+                folder_infos = queue.get(False)
+                self.run_folders(folder_infos)
+            except Empty:
+                break
+
+    def run_folders(self, folder_infos):
+        plots = []
+        for folder_info in folder_infos:
+            files = []
+            try:
+                files = os.listdir(folder_info.folder)
+            except:
+                pass
+
+            index = 0
+            for fn in files:
+                index += 1
+                plot = PlotInfo(index)
+                plot.folder_info = folder_info
+                plot.path = os.path.join(folder_info.folder, fn)
+                plot.filename = fn
+                plots.append(plot)
+                folder_info.plots.append(plot)
+                self.signalFoundPlot.emit(folder_info, plot)
+
+        self.run_plots(plots)
+
+    def run_plots(self, plots):
+        for plot_info in plots:
+            if self.cancel:
+                break
+            plot_info.status = '检查中'
+            self.signalUpdatePlot.emit(plot_info)
+
+            self.read_plot_info(plot_info)
+            self.signalUpdatePlot.emit(plot_info)
+
+            success = True
+            status = '完成'
+            if self.check_quality:
+                success, quality = self.check_plot_quality(plot_info)
+                if success:
+                    plot_info.quality = quality
+                else:
+                    if self.cancel:
+                        status = '取消'
+                    else:
+                        status = '失败'
+
+            plot_info.finish = True
+            plot_info.status = status
+            plot_info.success = success
+            self.signalUpdatePlot.emit(plot_info)
+
+    def read_plot_info(self, plot_info: PlotInfo):
+        if is_debug():
+            plot_info.fpk = 'xx'
+            plot_info.ppk = 'xx'
+            plot_info.contract = 'xx'
+            plot_info.k = '32'
+            time.sleep(0.1)
+            return
 
         try:
-            if self.process:
-                self.process.terminate()
+            prover = DiskProver(plot_info.path)
+            (
+                is_pool_contract_puzzle_hash,
+                pool_public_key_or_puzzle_hash,
+                farmer_public_key,
+                local_master_sk,
+            ) = parse_plot_info(prover.get_memo())
+
+            pool_public_key = ''
+            pool_contract_puzzle_hash = ''
+
+            if is_pool_contract_puzzle_hash:
+                pool_contract_puzzle_hash = pool_public_key_or_puzzle_hash
+            else:
+                pool_public_key = pool_public_key_or_puzzle_hash
+
+            plot_info.prover = prover
+            plot_info.fpk = farmer_public_key
+            plot_info.ppk = pool_public_key
+            plot_info.contract = pool_contract_puzzle_hash
+            plot_info.k = f'{size_to_k(os.path.getsize(plot_info.path))}'
+
+            # return {
+            #     'path': plot_path,
+            #     'prover': prover,
+            #     'farmer_public_key': farmer_public_key,
+            #     'pool_public_key': pool_public_key,
+            #     'pool_contract_puzzle_hash': pool_contract_puzzle_hash,
+            #     'local_master_sk': local_master_sk,
+            #     'plot_size': os.path.getsize(plot_path),
+            # }
         except:
             pass
 
+    def check_plot_quality(self, plot_info: PlotInfo):
+        if is_debug():
+            for i in range(self.challenge_count):
+                if self.cancel:
+                    return False, 0
+                plot_info.progress = (i + 1) * 100 / self.challenge_count
+                self.signalUpdatePlot.emit(plot_info)
+                time.sleep(0.3)
+            plot_info.progress = 100
+            self.signalUpdatePlot.emit(plot_info)
+            return True, random.choice([x / 10 for x in range(1, 19, 1)])
+
+        v = Verifier()
+
+        prover = plot_info.prover
+
+        total_proofs = 0
+        caught_exception: bool = False
+        for i in range(self.challenge_count):
+            challenge = std_hash(i.to_bytes(32, "big"))
+            try:
+                for index, quality_str in enumerate(prover.get_qualities_for_challenge(challenge)):
+                    try:
+                        proof = prover.get_full_proof(challenge, index, True)
+                        total_proofs += 1
+                        ver_quality_str = v.validate_proof(prover.get_id(), prover.get_size(), challenge, proof)
+                        assert quality_str == ver_quality_str
+                    except AssertionError as e:
+                        caught_exception = True
+            except KeyboardInterrupt:
+                return False, 0
+            except SystemExit:
+                return False, 0
+            except Exception as e:
+                caught_exception = True
+            if caught_exception is True:
+                break
+            if self.cancel:
+                return False, 0
+            plot_info.progress = (i+1) * 100 / self.challenge_count
+            self.signalUpdatePlot.emit(plot_info)
+        if total_proofs > 0 and caught_exception is False:
+            plot_info.progress = 100
+            self.signalUpdatePlot.emit(plot_info)
+
+            return True, round(total_proofs/float(self.challenge_count), 4)
+        return False, round(total_proofs/float(self.challenge_count), 4)
+
+
+class PlotCheckManager(QThread):
+    signalFoundPlot = pyqtSignal(FolderInfo, PlotInfo)
+    signalUpdateFolder = pyqtSignal(FolderInfo)
+    signalUpdatePlot = pyqtSignal(PlotInfo)
+    signalFinish = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(PlotCheckManager, self).__init__(*args, **kwargs)
+        self.queue = Queue()
+        self.workers: [PlotCheckWorker] = []
+
+        self.folder_infos = []
+        self.drivers = {}
+        self.check_quality = False
+        self.challenge_count = 30
+
     @property
     def working(self):
-        return self.process is not None
+        return len(self.workers) is not 0
 
-    def handle_output(self, line):
-        if 'Found plot' in line:
-            r = re.compile(r'Found plot (.*) of size (\d*)')
-            found = re.findall(r, line)
-            if not found:
-                return
-            if len(found[0]) != 2:
-                return
-            path, k = found[0]
+    def clear(self):
+        self.workers.clear()
+        self.drivers.clear()
+        self.queue.queue.clear()
 
-            pi = PlotInfo()
-            pi.path = path
-            pi.filename = os.path.basename(path)
-            pi.k = k
+    def start(self, *args, **kwargs):
+        if 'folder_infos' in kwargs:
+            self.folder_infos = kwargs['folder_infos']
+            for folder_info in self.folder_infos:
+                driver = os.path.splitdrive(folder_info.folder)[0]
+                if driver not in self.drivers:
+                    self.drivers[driver] = []
+                self.drivers[driver].append(folder_info)
+        if 'check_quality' in kwargs:
+            self.check_quality = kwargs['check_quality']
+        if 'challenge_count' in kwargs:
+            self.challenge_count = kwargs['challenge_count']
 
-            self.signalFoundPlot.emit(pi)
-        elif 'Testing plot' in line:
-            r = re.compile(r'Testing plot (.*) k=')
-            found = re.findall(r, line)
-            if not found:
-                return
-            self.checking_plot_path = found[0]
-            self.checking_plot_ppk = ''
-            self.checking_plot_fpk = ''
-        elif 'Pool public key' in line:
-            r = re.compile(r'Pool public key: (.*)')
-            found = re.findall(r, line)
-            if not found:
-                return
-            self.checking_plot_ppk = found[0]
-            if self.checking_plot_ppk == 'None':
-                self.checking_plot_ppk = ''
-        elif 'Farmer public key' in line:
-            r = re.compile(r'Farmer public key: (.*)')
-            found = re.findall(r, line)
-            if not found:
-                return
-            self.checking_plot_fpk = found[0]
-            if self.checking_plot_path:
-                self.signalCheckingPlot.emit(self.checking_plot_path, self.checking_plot_ppk, self.checking_plot_fpk)
-                self.checking_plot_ppk = ''
-                self.checking_plot_fpk = ''
-        elif 'Proofs' in line and ', ' in line:
-            r = re.compile(r'Proofs .*, (.*)')
-            found = re.findall(r, line)
-            if not found:
-                return
-            quality = found[0]
-            if self.checking_plot_path:
-                self.signalCheckResult.emit(self.checking_plot_path, quality)
-                self.checking_plot_path = ''
-
-    def remove_escape_code(self, line):
-        found = re.findall(re.compile(r'(\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK])'), line)
-        for f in found:
-            line = line.replace(f[0], '')
-        return line
+        super(PlotCheckManager, self).start()
 
     def run(self):
-        args = [self.chia_exe, 'plots', 'check', '-n', f'{self.challenge_count}']
-        cwd = os.path.dirname(self.chia_exe)
+        worker_count = len(self.drivers)
+        if worker_count == 0:
+            return
 
-        if is_debug():
-            cmdline = os.path.join(BASE_DIR, 'bin', 'windows', 'plotter', 'test.exe')
-            cwd = os.path.dirname(cmdline)
-            args = [cmdline, 'check_result.txt', '5', '0']
+        if worker_count > 30:
+            worker_count = 30
 
-        self.process = Popen(args, stdout=PIPE, stderr=STDOUT, cwd=cwd,
-                             creationflags=CREATE_NO_WINDOW)
+        for driver in self.drivers:
+            self.queue.put(self.drivers[driver], False)
 
-        while True:
-            line = self.process.stdout.readline()
+        for i in range(worker_count):
+            worker = PlotCheckWorker(queue=self.queue, check_quality=self.check_quality,
+                                     challenge_count=self.challenge_count)
+            worker.signalFoundPlot.connect(self.signalFoundPlot)
+            worker.signalUpdateFolder.connect(self.signalUpdateFolder)
+            worker.signalUpdatePlot.connect(self.signalUpdatePlot)
 
-            if not line and self.process.poll() is not None:
-                break
+            self.workers.append(worker)
+            worker.start()
 
-            orig_text = line.decode('utf-8', errors='replace')
-            orig_text = self.remove_escape_code(orig_text)
+        for worker in self.workers:
+            worker.wait()
 
-            text = orig_text.rstrip()
-
-            if text:
-                self.handle_output(text)
-
-        self.process = None
         self.signalFinish.emit()
+        self.workers.clear()
+
+    def stop(self):
+        for worker in self.workers:
+            worker.cancel = True
+        self.queue.queue.clear()

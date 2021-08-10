@@ -109,7 +109,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             event.ignore()
             return
 
-        if self.tabPlotCheckWidget.worker:
+        if self.tabPlotCheckWidget.check_manager.working:
             QMessageBox.warning(self, '提示', '请先停止Plot检查')
             event.ignore()
             return
