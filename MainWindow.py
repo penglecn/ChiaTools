@@ -33,7 +33,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tabHPoolOGMineWidget.setMainWindow(self)
         self.tabHPoolPPMineWidget.setMainWindow(self)
         self.tabHuobiPoolMineWidget.setMainWindow(self)
-
+        # self.tabPlotCheckWidget
         config = get_config()
         if 'current_tab_index' in config:
             current_tab_index = config['current_tab_index']

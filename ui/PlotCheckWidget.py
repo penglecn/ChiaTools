@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\peng\Desktop\chia-tools\ui\PlotCheckWidget.ui'
+# Form implementation generated from reading ui file 'C:\Users\Administrator\Desktop\chia-tools\ui\PlotCheckWidget.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -22,13 +22,31 @@ class Ui_PlotCheckWidget(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSpacing(6)
         self.horizontalLayout.setObjectName("horizontalLayout")
+        self.label_2 = QtWidgets.QLabel(PlotCheckWidget)
+        self.label_2.setObjectName("label_2")
+        self.horizontalLayout.addWidget(self.label_2)
+        self.spinBoxThreadCount = QtWidgets.QSpinBox(PlotCheckWidget)
+        self.spinBoxThreadCount.setMinimum(1)
+        self.spinBoxThreadCount.setProperty("value", 5)
+        self.spinBoxThreadCount.setObjectName("spinBoxThreadCount")
+        self.horizontalLayout.addWidget(self.spinBoxThreadCount)
         self.checkBoxCheckQuality = QtWidgets.QCheckBox(PlotCheckWidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.checkBoxCheckQuality.sizePolicy().hasHeightForWidth())
+        self.checkBoxCheckQuality.setSizePolicy(sizePolicy)
         self.checkBoxCheckQuality.setObjectName("checkBoxCheckQuality")
         self.horizontalLayout.addWidget(self.checkBoxCheckQuality)
-        self.label = QtWidgets.QLabel(PlotCheckWidget)
-        self.label.setObjectName("label")
-        self.horizontalLayout.addWidget(self.label)
+        self.labelChallengeCount = QtWidgets.QLabel(PlotCheckWidget)
+        self.labelChallengeCount.setObjectName("labelChallengeCount")
+        self.horizontalLayout.addWidget(self.labelChallengeCount)
         self.spinChallengeCount = QtWidgets.QSpinBox(PlotCheckWidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.spinChallengeCount.sizePolicy().hasHeightForWidth())
+        self.spinChallengeCount.setSizePolicy(sizePolicy)
         self.spinChallengeCount.setMinimum(5)
         self.spinChallengeCount.setMaximum(200)
         self.spinChallengeCount.setProperty("value", 30)
@@ -65,8 +83,9 @@ class Ui_PlotCheckWidget(object):
     def retranslateUi(self, PlotCheckWidget):
         _translate = QtCore.QCoreApplication.translate
         PlotCheckWidget.setWindowTitle(_translate("PlotCheckWidget", "PlotCheckWidget"))
+        self.label_2.setText(_translate("PlotCheckWidget", "线程数"))
         self.checkBoxCheckQuality.setText(_translate("PlotCheckWidget", "检查质量"))
-        self.label.setText(_translate("PlotCheckWidget", "挑战数量"))
+        self.labelChallengeCount.setText(_translate("PlotCheckWidget", "挑战数量"))
         self.buttonStart.setText(_translate("PlotCheckWidget", "开始检查"))
         self.buttonClear.setText(_translate("PlotCheckWidget", "清除"))
         self.treePlots.setSortingEnabled(True)

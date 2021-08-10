@@ -146,13 +146,13 @@ class PlotCheckWorker(QThread):
             if self.check_quality:
                 success, quality = self.check_plot_quality(plot_info)
                 if success:
-                    plot_info.quality = quality
+                    plot_info.quality = f'{quality}'
                 else:
                     if self.cancel:
                         status = '取消'
                     else:
                         status = '失败'
-
+            plot_info.progress = 100
             plot_info.finish = True
             plot_info.status = status
             plot_info.success = success
@@ -262,6 +262,7 @@ class PlotCheckManager(QThread):
         self.queue = Queue()
         self.workers: [PlotCheckWorker] = []
 
+        self.thread_count = 5
         self.folder_infos = []
         self.drivers = {}
         self.check_quality = False
@@ -269,7 +270,7 @@ class PlotCheckManager(QThread):
 
     @property
     def working(self):
-        return len(self.workers) is not 0
+        return len(self.workers) != 0
 
     def clear(self):
         self.workers.clear()
@@ -277,6 +278,8 @@ class PlotCheckManager(QThread):
         self.queue.queue.clear()
 
     def start(self, *args, **kwargs):
+        if 'thread_count' in kwargs:
+            self.thread_count = kwargs['thread_count']
         if 'folder_infos' in kwargs:
             self.folder_infos = kwargs['folder_infos']
             for folder_info in self.folder_infos:
@@ -292,17 +295,10 @@ class PlotCheckManager(QThread):
         super(PlotCheckManager, self).start()
 
     def run(self):
-        worker_count = len(self.drivers)
-        if worker_count == 0:
-            return
-
-        if worker_count > 30:
-            worker_count = 30
-
         for driver in self.drivers:
             self.queue.put(self.drivers[driver], False)
 
-        for i in range(worker_count):
+        for i in range(self.thread_count):
             worker = PlotCheckWorker(queue=self.queue, check_quality=self.check_quality,
                                      challenge_count=self.challenge_count)
             worker.signalFoundPlot.connect(self.signalFoundPlot)

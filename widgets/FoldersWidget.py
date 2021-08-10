@@ -323,6 +323,8 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         self.restartMine()
 
+        self.main_window.tabPlotCheckWidget.add_folder_item(folder)
+
         disk_operation.updateMiningPlotTotalInfo()
         disk_operation.updateMiningNewPlotTotalInfo()
 
@@ -372,6 +374,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
                 if folder_obj['folder'] == folder_to_remove:
                     config['hdd_folders'].remove(folder_obj)
                     break
+            self.main_window.tabPlotCheckWidget.remove_folder_item(folder_to_remove)
 
         save_config()
 
