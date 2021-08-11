@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\peng\Desktop\chia-tools\ui\PlotCheckWidget.ui'
+# Form implementation generated from reading ui file 'C:\Users\Administrator\Desktop\chia-tools\ui\PlotCheckWidget.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -71,6 +71,8 @@ class Ui_PlotCheckWidget(object):
         self.horizontalLayout_4.setSpacing(6)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.buttonStart = QtWidgets.QPushButton(PlotCheckWidget)
+        self.buttonStart.setAutoDefault(True)
+        self.buttonStart.setDefault(True)
         self.buttonStart.setObjectName("buttonStart")
         self.horizontalLayout_4.addWidget(self.buttonStart)
         self.buttonClear = QtWidgets.QPushButton(PlotCheckWidget)
@@ -104,11 +106,10 @@ class Ui_PlotCheckWidget(object):
         self.label_2.setText(_translate("PlotCheckWidget", "最大线程数"))
         self.checkBoxCheckQuality.setText(_translate("PlotCheckWidget", "检查质量"))
         self.labelChallengeCount.setText(_translate("PlotCheckWidget", "挑战数量"))
-        self.label_3.setText(_translate("PlotCheckWidget", "默认线程数是选择的目录的硬盘数"))
+        self.label_3.setText(_translate("PlotCheckWidget", "检查的线程数是选择的硬盘数"))
         self.buttonStart.setText(_translate("PlotCheckWidget", "开始检查"))
         self.buttonClear.setText(_translate("PlotCheckWidget", "清除"))
         self.treePlots.setSortingEnabled(True)
-        self.treePlots.headerItem().setText(0, _translate("PlotCheckWidget", "          "))
         self.treePlots.headerItem().setText(1, _translate("PlotCheckWidget", "目录名"))
         self.treePlots.headerItem().setText(2, _translate("PlotCheckWidget", "数量"))
         self.treePlots.headerItem().setText(3, _translate("PlotCheckWidget", "状态"))
@@ -118,4 +119,3 @@ class Ui_PlotCheckWidget(object):
         self.treePlots.headerItem().setText(7, _translate("PlotCheckWidget", "K大小"))
         self.treePlots.headerItem().setText(8, _translate("PlotCheckWidget", "fpk"))
         self.treePlots.headerItem().setText(9, _translate("PlotCheckWidget", "ppk"))
-        self.treePlots.headerItem().setText(10, _translate("PlotCheckWidget", "NFT合约地址"))

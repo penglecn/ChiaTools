@@ -120,7 +120,7 @@
      <item>
       <widget class="QLabel" name="label_3">
        <property name="text">
-        <string>默认线程数是选择的目录的硬盘数</string>
+        <string>检查的线程数是选择的硬盘数</string>
        </property>
       </widget>
      </item>
@@ -146,6 +146,12 @@
         <widget class="QPushButton" name="buttonStart">
          <property name="text">
           <string>开始检查</string>
+         </property>
+         <property name="autoDefault">
+          <bool>true</bool>
+         </property>
+         <property name="default">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -197,7 +203,7 @@
      </property>
      <column>
       <property name="text">
-       <string>          </string>
+       <string/>
       </property>
       <property name="textAlignment">
        <set>AlignCenter</set>
@@ -246,11 +252,6 @@
      <column>
       <property name="text">
        <string>ppk</string>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>NFT合约地址</string>
       </property>
      </column>
     </widget>

@@ -6,7 +6,7 @@ from core.plot.check import PlotCheckManager, FolderInfo, PlotInfo
 from typing import Optional, Tuple
 from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtWidgets import QTreeWidgetItem, QHeaderView
-from PyQt5.Qt import QCursor, QStyle
+from PyQt5.Qt import QCursor, QStyle, QBrush, QColor
 from subprocess import run
 import os
 from config import get_config, save_config
@@ -53,9 +53,6 @@ class CustomTreeWidgetItem(QTreeWidgetItem):
 
         if column in [2, 4]:
             try:
-                v1s = self.text(column)
-                v2s = other.text(column)
-
                 v1 = float(self.text(column))
                 v2 = float(other.text(column))
                 return v1 < v2
@@ -63,7 +60,6 @@ class CustomTreeWidgetItem(QTreeWidgetItem):
                 pass
 
         return super().__lt__(other)
-        # return self.text(column).toLower() < other.text(column).toLower()
 
 
 class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
@@ -140,7 +136,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         self.buttonStart.setText('开始检查')
         self.spinBoxMaxThreadCount.setDisabled(False)
         self.checkBoxCheckQuality.setDisabled(False)
-        self.spinChallengeCount.setEnabled(self.checkBoxCheckQuality.isChecked())
+        self.spinChallengeCount.setDisabled(False)
         self.buttonClear.setEnabled(True)
 
         self.update_checkbox_enable(True)
@@ -304,6 +300,15 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         item.setText(col, f'{plot_info.index}')
 
         col += 1
+        item.setBackground(col, QBrush(QColor('#ffffff')))
+        item.setForeground(col, QBrush(QColor(0, 0, 0)))
+        if plot_info.finish:
+            if plot_info.success:
+                color = QColor('#50c350')
+            else:
+                color = QColor('#e86363')
+            item.setBackground(col, QBrush(color))
+            item.setForeground(col, QBrush(QColor(255, 255, 255)))
         item.setText(col, plot_info.status)
 
         col += 1
@@ -323,9 +328,6 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
 
         col += 1
         item.setText(col, plot_info.ppk)
-
-        col += 1
-        item.setText(col, plot_info.contract)
 
     def on_show_menu(self, pos):
         items: [QTreeWidgetItem] = self.treePlots.selectedItems()
@@ -356,7 +358,9 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
 
         if len(items) == 1:
             action_locate = menu.addAction(u"浏览文件")
-        action_delete = menu.addAction(u"删除")
+
+        if not self.check_manager.working:
+            action_delete = menu.addAction(u"删除")
 
         action = menu.exec(QCursor.pos())
 
