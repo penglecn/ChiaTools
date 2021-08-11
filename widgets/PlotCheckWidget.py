@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QHBoxLayout, QCheckBox, QProgressBar, QStyleOptionButton, QStyle, QApplication
+from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QHBoxLayout, QCheckBox, QProgressBar, QStyleOptionButton, QStyle, QApplication, QPushButton
 import core
 from ui.PlotCheckWidget import Ui_PlotCheckWidget
 from utils import get_official_chia_exe
@@ -13,29 +13,57 @@ from config import get_config, save_config
 from core.disk import disk_operation
 
 
-class MyHeader(QHeaderView):
-    isOn = False
+def make_checkbox(slot, checked):
+    widget = QWidget()
+    layout = QHBoxLayout()
+    checkbox = QCheckBox()
+    checkbox.setChecked(checked)
+    # checkbox.setDisabled(True)
+    checkbox.setFixedWidth(30)
+    if slot:
+        checkbox.stateChanged.connect(slot)
+    layout.addWidget(checkbox)
+    layout.setAlignment(checkbox, Qt.AlignCenter)
+    layout.setContentsMargins(5, 5, 5, 5)
+    widget.setLayout(layout)
+
+    return checkbox, widget
+
+
+class CustomHeaderView(QHeaderView):
     def __init__(self, orientation, parent=None):
-        QHeaderView.__init__(self, orientation, parent)
+        super(CustomHeaderView, self).__init__(orientation, parent)
 
-    def paintSection(self, painter, rect, logicalIndex):
-        painter.save()
-        QHeaderView.paintSection(self, painter, rect, logicalIndex)
-        painter.restore()
+        widget = QWidget(self)
+        layout = QHBoxLayout()
+        self.checkbox = QCheckBox()
+        self.checkbox.setChecked(True)
+        layout.addWidget(self.checkbox)
+        layout.setAlignment(self.checkbox, Qt.AlignHCenter)
+        layout.setContentsMargins(25, 6, 5, 5)
+        widget.setLayout(layout)
 
-        if logicalIndex == 0:
-            option = QStyleOptionButton()
-            option.rect = QRect(10, 10, 10, 10)
-            if self.isOn:
-                option.state = QStyle.State_On
-            else:
-                option.state = QStyle.State_Off
-            self.style().drawControl(QStyle.CE_CheckBox, option, painter)
 
-    def mousePressEvent(self, event):
-        self.isOn = not self.isOn
-        self.updateSection(0)
-        QHeaderView.mousePressEvent(self, event)
+class CustomTreeWidgetItem(QTreeWidgetItem):
+    def __init__(self, parent=None):
+        QTreeWidgetItem.__init__(self, parent)
+
+    def __lt__(self, other):
+        column = self.treeWidget().sortColumn()
+
+        if column in [2, 4]:
+            try:
+                v1s = self.text(column)
+                v2s = other.text(column)
+
+                v1 = float(self.text(column))
+                v2 = float(other.text(column))
+                return v1 < v2
+            except ValueError:
+                pass
+
+        return super().__lt__(other)
+        # return self.text(column).toLower() < other.text(column).toLower()
 
 
 class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
@@ -43,29 +71,27 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         super().__init__(*args, **kwargs)
         self.setupUi(self)
 
-        # header_item: QTreeWidgetItem = QTreeWidgetItem()
-        # header_item.setFlags(header_item.flags() | Qt.ItemIsUserCheckable)
-        # header_item.data(1, Qt.CheckStateRole)
-        # header_item.setCheckState(1, Qt.Checked)
-        # header_item.setText(0, '333')
-        # header_item.setText(1, '444')
-        # self.treePlots.setHeaderItem(header_item)
+        self.header: CustomHeaderView = CustomHeaderView(Qt.Horizontal, self.treePlots)
+        self.treePlots.setHeader(self.header)
 
-        self.treePlots.header().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.treePlots.header().setStretchLastSection(False)
+        self.header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.header.setStretchLastSection(False)
+        self.header.checkbox.stateChanged.connect(self.on_check_all)
+
         self.treePlots.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treePlots.customContextMenuRequested.connect(self.on_show_menu)
         self.treePlots.setIndentation(20)
+        self.treePlots.headerItem().setText(0, '         ')
 
         self.spinChallengeCount.setVisible(False)
         self.labelChallengeCount.setVisible(False)
-        self.spinBoxThreadCount.valueChanged.connect(self.on_change_thread_count)
+        self.spinBoxMaxThreadCount.valueChanged.connect(self.on_change_max_thread_count)
         self.checkBoxCheckQuality.stateChanged.connect(self.on_check_quality)
         self.spinChallengeCount.valueChanged.connect(self.on_change_challenge_count)
 
         config = get_config()
-        if 'check_thread_count' in config:
-            self.spinBoxThreadCount.setValue(config['check_thread_count'])
+        if 'check_max_thread_count' in config:
+            self.spinBoxMaxThreadCount.setValue(config['check_max_thread_count'])
         if 'check_quality' in config:
             self.checkBoxCheckQuality.setChecked(config['check_quality'])
         if 'check_challenge_count' in config:
@@ -98,26 +124,49 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         self.on_clear()
 
         self.buttonStart.setText('停止检查')
-        self.spinBoxThreadCount.setEnabled(False)
+        self.spinBoxMaxThreadCount.setEnabled(False)
         self.checkBoxCheckQuality.setEnabled(False)
         self.spinChallengeCount.setEnabled(False)
         self.buttonClear.setEnabled(False)
 
-        self.check_manager.start(thread_count=self.spinBoxThreadCount.value(),
+        self.check_manager.start(max_thread_count=self.spinBoxMaxThreadCount.value(),
                                  folder_infos=folder_infos,
                                  check_quality=self.checkBoxCheckQuality.isChecked(),
                                  challenge_count=self.spinChallengeCount.value())
 
+        self.update_checkbox_enable(False)
+
     def on_finish(self):
         self.buttonStart.setText('开始检查')
-        self.spinBoxThreadCount.setDisabled(False)
+        self.spinBoxMaxThreadCount.setDisabled(False)
         self.checkBoxCheckQuality.setDisabled(False)
         self.spinChallengeCount.setEnabled(self.checkBoxCheckQuality.isChecked())
         self.buttonClear.setEnabled(True)
 
-    def on_change_thread_count(self):
+        self.update_checkbox_enable(True)
+
+    def update_checkbox_enable(self, enable=None):
+        if enable is None:
+            enable = not self.check_manager.working
+
+        self.header.checkbox.setEnabled(enable)
+
+        for i in range(self.treePlots.topLevelItemCount()):
+            item: QTreeWidgetItem = self.treePlots.topLevelItem(i)
+            checkbox: QCheckBox = item.data(1, Qt.UserRole)
+            checkbox.setEnabled(enable)
+
+    def on_check_all(self):
+        checked = self.header.checkbox.isChecked()
+
+        for i in range(self.treePlots.topLevelItemCount()):
+            item: QTreeWidgetItem = self.treePlots.topLevelItem(i)
+            checkbox: QCheckBox = item.data(1, Qt.UserRole)
+            checkbox.setChecked(checked)
+
+    def on_change_max_thread_count(self):
         config = get_config()
-        config['check_thread_count'] = self.spinBoxThreadCount.value()
+        config['check_max_thread_count'] = self.spinBoxMaxThreadCount.value()
         save_config()
 
     def on_check_quality(self):
@@ -138,31 +187,20 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
     def slotDiskOperation(self, name, opt):
         result = opt['result']
 
-    def make_checkbox(self, slot, checked):
-        widget = QWidget()
-        layout = QHBoxLayout()
-        checkbox = QCheckBox()
-        checkbox.setChecked(checked)
-        # checkbox.setDisabled(True)
-        checkbox.setFixedWidth(30)
-        if slot:
-            checkbox.stateChanged.connect(slot)
-        layout.addWidget(checkbox)
-        layout.setAlignment(checkbox, Qt.AlignCenter)
-        layout.setContentsMargins(5, 5, 5, 5)
-        widget.setLayout(layout)
-
-        return checkbox, widget
-
-    def add_folder_item(self, folder):
-        folder_item = QTreeWidgetItem()
+    def add_folder_item(self, folder, manual=False):
+        folder_item = CustomTreeWidgetItem()
         folder_item.setIcon(1, self.style().standardIcon(QStyle.SP_DirIcon))
 
         self.treePlots.addTopLevelItem(folder_item)
 
-        mine_checkbox, mine_widget = self.make_checkbox(None, False)
+        checked = True
+        if self.check_manager.working:
+            checked = False
+        mine_checkbox, mine_widget = make_checkbox(None, checked)
         folder_item.setData(1, Qt.UserRole, mine_checkbox)
         self.treePlots.setItemWidget(folder_item, 0, mine_widget)
+
+        mine_checkbox.stateChanged.connect(self.on_check_item)
 
         progress = QProgressBar()
         self.treePlots.setItemWidget(folder_item, 5, progress)
@@ -173,7 +211,21 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         folder_item.setData(0, Qt.UserRole, folder_info)
         self.update_folder_item(folder_item, folder_info)
 
+        self.update_checkbox_enable()
+
         return folder_item
+
+    def on_check_item(self):
+        all_checked = True
+        for i in range(self.treePlots.topLevelItemCount()):
+            item: QTreeWidgetItem = self.treePlots.topLevelItem(i)
+            checkbox: QCheckBox = item.data(1, Qt.UserRole)
+            if not checkbox.isChecked():
+                all_checked = False
+                break
+        self.header.checkbox.stateChanged.disconnect()
+        self.header.checkbox.setChecked(all_checked)
+        self.header.checkbox.stateChanged.connect(self.on_check_all)
 
     def remove_folder_item(self, folder):
         if self.check_manager.working:
@@ -196,6 +248,8 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
                 folder = folder_obj['folder']
 
                 self.add_folder_item(folder)
+
+        self.treePlots.sortByColumn(1, Qt.AscendingOrder)
 
     def get_checked_folder_infos(self):
         folders = []
@@ -231,7 +285,10 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
                 return plot_item
         return None
 
-    def update_folder_item(self, item: QTreeWidgetItem, folder_info: FolderInfo):
+    def update_folder_item(self, item: QTreeWidgetItem, folder_info: Optional[FolderInfo]):
+        if folder_info is None:
+            folder_info = item.data(0, Qt.UserRole)
+
         col = 1
         item.setText(col, folder_info.folder)
 
@@ -271,16 +328,26 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         item.setText(col, plot_info.contract)
 
     def on_show_menu(self, pos):
-        items = self.treePlots.selectedItems()
+        items: [QTreeWidgetItem] = self.treePlots.selectedItems()
 
         if not items:
             return
 
         plots = []
 
-        for item in items:
-            pi = item.data(0, Qt.UserRole)
-            plots.append(pi)
+        for plot_item in items:
+            folder_item = plot_item.parent()
+            if folder_item is None:
+                return
+
+            fi = folder_item.data(0, Qt.UserRole)
+            pi = plot_item.data(0, Qt.UserRole)
+            plots.append(({
+                'folder_item': folder_item,
+                'plot_item': plot_item,
+                'fi': fi,
+                'pi': pi,
+            }))
 
         menu = QMenu(self)
 
@@ -297,21 +364,26 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
             return
 
         if action == action_locate:
-            run('explorer /select, ' + plots[0].path)
+            run('explorer /select, ' + plots[0]['pi'].path)
         elif action == action_delete:
             if QMessageBox.information(self, '提示', f"确定要删除这{len(plots)}个文件吗？\n删除后将无法恢复。",
                                        QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Cancel:
                 return
-            for pi in plots:
+            for obj in plots:
+                folder_item: QTreeWidgetItem = obj['folder_item']
+                plot_item: QTreeWidgetItem = obj['plot_item']
+                pi: PlotInfo = obj['pi']
+                fi: FolderInfo = obj['fi']
                 try:
                     os.remove(pi.path)
                 except:
                     if not core.is_debug():
                         QMessageBox.information(self, '提示', f"删除文件失败\n{pi.path}\n请检查文件是否被占用。")
                         return
-                item = self.get_item(pi)
-                self.treePlots.takeTopLevelItem(self.treePlots.indexOfTopLevelItem(item))
-                del self.plots[pi.path]
+                folder_item.takeChild(folder_item.indexOfChild(plot_item))
+                fi.plots.remove(pi)
+
+                self.update_folder_item(folder_item, None)
 
     def on_clear(self):
         self.check_manager.clear()
@@ -327,7 +399,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         if folder_item is None:
             return
 
-        plot_item = QTreeWidgetItem()
+        plot_item = CustomTreeWidgetItem()
         plot_item.setData(0, Qt.UserRole, plot_info)
         folder_item.addChild(plot_item)
 

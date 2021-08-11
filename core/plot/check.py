@@ -124,6 +124,7 @@ class PlotCheckWorker(QThread):
                 plot = PlotInfo(index)
                 plot.folder_info = folder_info
                 plot.path = os.path.join(folder_info.folder, fn)
+                plot.path = plot.path.replace('/', '\\')
                 plot.filename = fn
                 plots.append(plot)
                 folder_info.plots.append(plot)
@@ -209,7 +210,7 @@ class PlotCheckWorker(QThread):
                     return False, 0
                 plot_info.progress = (i + 1) * 100 / self.challenge_count
                 self.signalUpdatePlot.emit(plot_info)
-                time.sleep(0.3)
+                time.sleep(0.1)
             plot_info.progress = 100
             self.signalUpdatePlot.emit(plot_info)
             return True, random.choice([x / 10 for x in range(1, 19, 1)])
@@ -262,7 +263,7 @@ class PlotCheckManager(QThread):
         self.queue = Queue()
         self.workers: [PlotCheckWorker] = []
 
-        self.thread_count = 5
+        self.max_thread_count = 5
         self.folder_infos = []
         self.drivers = {}
         self.check_quality = False
@@ -278,8 +279,8 @@ class PlotCheckManager(QThread):
         self.queue.queue.clear()
 
     def start(self, *args, **kwargs):
-        if 'thread_count' in kwargs:
-            self.thread_count = kwargs['thread_count']
+        if 'max_thread_count' in kwargs:
+            self.max_thread_count = kwargs['max_thread_count']
         if 'folder_infos' in kwargs:
             self.folder_infos = kwargs['folder_infos']
             for folder_info in self.folder_infos:
@@ -292,13 +293,12 @@ class PlotCheckManager(QThread):
         if 'challenge_count' in kwargs:
             self.challenge_count = kwargs['challenge_count']
 
-        super(PlotCheckManager, self).start()
+        thread_count = len(self.drivers)
 
-    def run(self):
-        for driver in self.drivers:
-            self.queue.put(self.drivers[driver], False)
+        if thread_count > self.max_thread_count:
+            thread_count = self.max_thread_count
 
-        for i in range(self.thread_count):
+        for i in range(thread_count):
             worker = PlotCheckWorker(queue=self.queue, check_quality=self.check_quality,
                                      challenge_count=self.challenge_count)
             worker.signalFoundPlot.connect(self.signalFoundPlot)
@@ -306,6 +306,14 @@ class PlotCheckManager(QThread):
             worker.signalUpdatePlot.connect(self.signalUpdatePlot)
 
             self.workers.append(worker)
+
+        super(PlotCheckManager, self).start()
+
+    def run(self):
+        for driver in self.drivers:
+            self.queue.put(self.drivers[driver], False)
+
+        for worker in self.workers:
             worker.start()
 
         for worker in self.workers:

@@ -323,7 +323,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         self.restartMine()
 
-        self.main_window.tabPlotCheckWidget.add_folder_item(folder)
+        self.main_window.tabPlotCheckWidget.add_folder_item(folder, True)
 
         disk_operation.updateMiningPlotTotalInfo()
         disk_operation.updateMiningNewPlotTotalInfo()
