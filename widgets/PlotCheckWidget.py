@@ -100,7 +100,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         self.check_manager.signalFinish.connect(self.on_finish)
 
         self.buttonStart.clicked.connect(self.on_start_check)
-        self.buttonClear.clicked.connect(self.on_clear)
+        self.buttonClear.clicked.connect(self.on_clear_all)
 
         self.load_folders()
 
@@ -117,7 +117,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
             QMessageBox.information(self, '提示', '请先选择目录')
             return
 
-        self.on_clear()
+        self.on_clear_checked()
 
         self.buttonStart.setText('停止检查')
         self.spinBoxMaxThreadCount.setEnabled(False)
@@ -215,8 +215,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         all_checked = True
         for i in range(self.treePlots.topLevelItemCount()):
             item: QTreeWidgetItem = self.treePlots.topLevelItem(i)
-            checkbox: QCheckBox = item.data(1, Qt.UserRole)
-            if not checkbox.isChecked():
+            if not self.is_folder_item_checked(item):
                 all_checked = False
                 break
         self.header.checkbox.stateChanged.disconnect()
@@ -251,9 +250,8 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
         folders = []
         for i in range(self.treePlots.topLevelItemCount()):
             item = self.treePlots.topLevelItem(i)
-            checkbox: QCheckBox = item.data(1, Qt.UserRole)
             folder_info: FolderInfo = item.data(0, Qt.UserRole)
-            if checkbox.isChecked():
+            if self.is_folder_item_checked(item):
                 folders.append(folder_info)
         return folders
 
@@ -389,7 +387,7 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
 
                 self.update_folder_item(folder_item, None)
 
-    def on_clear(self):
+    def on_clear_all(self):
         self.check_manager.clear()
         for i in range(self.treePlots.topLevelItemCount()):
             folder_item: QTreeWidgetItem = self.treePlots.topLevelItem(i)
@@ -397,6 +395,21 @@ class PlotCheckWidget(QWidget, Ui_PlotCheckWidget):
             folder_info: FolderInfo = folder_item.data(0, Qt.UserRole)
             folder_info.clear()
             self.update_folder_item(folder_item, folder_info)
+
+    def on_clear_checked(self):
+        self.check_manager.clear()
+        for i in range(self.treePlots.topLevelItemCount()):
+            folder_item: QTreeWidgetItem = self.treePlots.topLevelItem(i)
+            if not self.is_folder_item_checked(folder_item):
+                continue
+            folder_item.takeChildren()
+            folder_info: FolderInfo = folder_item.data(0, Qt.UserRole)
+            folder_info.clear()
+            self.update_folder_item(folder_item, folder_info)
+
+    def is_folder_item_checked(self, item: QTreeWidgetItem):
+        checkbox: QCheckBox = item.data(1, Qt.UserRole)
+        return checkbox.isChecked()
 
     def on_found_plot(self, folder_info: FolderInfo, plot_info: PlotInfo):
         folder_item = self.get_folder_item(folder_info)
