@@ -99,6 +99,9 @@ class PlotTask(QObject):
         if not auto_delete_old_plot:
             return
 
+        if not self.is_new_plot:
+            return
+
         folder = sub_task.hdd_folder
         driver = os.path.splitdrive(folder)[0]
         usage = get_disk_usage(driver, no_cache=True)
@@ -126,7 +129,7 @@ class PlotTask(QObject):
             return
 
         config = get_config()
-        free_space_for_plot = 'auto_delete_old_plot' in config and config['auto_delete_old_plot']
+        free_space_for_plot = self.is_new_plot and 'auto_delete_old_plot' in config and config['auto_delete_old_plot']
 
         self.do_next(free_space_for_plot=free_space_for_plot and self.is_new_plot)
 
@@ -139,7 +142,7 @@ class PlotTask(QObject):
             return
 
         config = get_config()
-        free_space_for_plot = 'auto_delete_old_plot' in config and config['auto_delete_old_plot']
+        free_space_for_plot = self.is_new_plot and 'auto_delete_old_plot' in config and config['auto_delete_old_plot']
 
         self.do_next(free_space_for_plot=free_space_for_plot and self.is_new_plot)
 
