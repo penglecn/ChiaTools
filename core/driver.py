@@ -1,13 +1,17 @@
 import os
+import psutil
 import random
 
 import core
+from core.disk import split_drive
 from config import get_config
 from utils import get_k_size, size_to_k, size_to_k32_count
 
 
 class HDDFolders(object):
     def __init__(self):
+        psutil.disk_partitions()
+
         config = get_config()
         self.drivers = {}
         self.old_plot_folders = []
@@ -20,7 +24,7 @@ class HDDFolders(object):
                 folder = folder_obj['folder']
                 mine = folder_obj['mine']
                 new_plot = folder_obj['new_plot']
-                driver, _ = os.path.splitdrive(folder)
+                driver, _ = split_drive(folder)
                 if driver not in self.drivers:
                     self.drivers[driver] = []
                 self.drivers[driver].append(folder_obj)

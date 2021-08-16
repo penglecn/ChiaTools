@@ -9,7 +9,7 @@ from config import save_config, get_config
 from utils import size_to_str, delta_to_str, seconds_to_str
 import psutil
 import os
-from core.disk import disk_operation
+from core.disk import disk_operation, split_drive
 from typing import Optional
 
 
@@ -68,7 +68,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             driver_item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
             driver = driver_item.text(0)
             if driver_item.data(0, Qt.UserRole) == 'folder':
-                driver = os.path.splitdrive(driver)[0]
+                driver = split_drive(driver)[0]
             drivers.append(driver)
 
         return drivers
@@ -123,7 +123,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         self.updateSSDSpaces()
 
     def addHDDFolder(self, folder, mine, new_plot):
-        driver, _ = os.path.splitdrive(folder)
+        driver, _ = split_drive(folder)
 
         if not driver:
             return
@@ -136,7 +136,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             _item_type = _item.data(0, Qt.UserRole)
 
             if _item_type == 'folder':
-                _item_driver = os.path.splitdrive(_item_driver)[0]
+                _item_driver = split_drive(_item_driver)[0]
 
             if _item_driver == driver:
                 driver_item = _item
@@ -423,7 +423,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
             driver_item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
             _driver = driver_item.text(0)
             if driver_item.data(0, Qt.UserRole) == 'folder':
-                _driver = os.path.splitdrive(_driver)[0]
+                _driver = split_drive(_driver)[0]
             if _driver == driver:
                 return driver_item
         return None
@@ -475,7 +475,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
                 _item: QTreeWidgetItem = self.treeHDD.topLevelItem(i)
                 _item_driver = _item.text(0)
                 if _item.data(0, Qt.UserRole) == 'folder':
-                    _item_driver = os.path.splitdrive(_item_driver)[0]
+                    _item_driver = split_drive(_item_driver)[0]
                 if _item_driver == driver:
                     driver_item = _item
                     break
@@ -509,7 +509,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
 
         for folder in folders_plot_info:
             info = folders_plot_info[folder]
-            driver = os.path.splitdrive(folder)
+            driver = split_drive(folder)
             if driver:
                 driver = driver[0]
             if driver not in drivers:

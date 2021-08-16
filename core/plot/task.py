@@ -13,7 +13,7 @@ import pickle
 import platform
 from config import get_config
 from utils.lock import RWlock
-from core.disk import get_disk_usage
+from core.disk import get_disk_usage, split_drive
 from core.driver import HDDFolders
 import random
 from utils.chia.pos import get_plot_id_and_memo
@@ -28,6 +28,7 @@ class PlotTask(QObject):
     signalNewPlot = pyqtSignal(object, object)
     signalNewSubTask = pyqtSignal(object, object)
     signalSubTaskDone = pyqtSignal(object, object)
+    signalPlotFailed = pyqtSignal(object, object, bool)
 
     def __init__(self, *args, **kwargs):
         super(PlotTask, self).__init__(*args, **kwargs)
@@ -73,6 +74,7 @@ class PlotTask(QObject):
         self.signalBeforeMakingPlot.connect(self.beforeMakingPlot)
         self.signalMakingPlot.connect(self.makingPlot)
         self.signalNewPlot.connect(self.newPlot)
+        self.signalPlotFailed.connect(self.plotFailed)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -103,7 +105,7 @@ class PlotTask(QObject):
             return
 
         folder = sub_task.hdd_folder
-        driver = os.path.splitdrive(folder)[0]
+        driver = split_drive(folder)[0]
         usage = get_disk_usage(driver, no_cache=True)
         if usage is None:
             return
@@ -134,8 +136,7 @@ class PlotTask(QObject):
         self.do_next(free_space_for_plot=free_space_for_plot and self.is_new_plot)
 
     def newPlot(self, task, sub_task):
-        doing_next = task.current_sub_task != sub_task
-        if doing_next:
+        if task.current_sub_task != sub_task:
             return
 
         if self.next_stop:
@@ -146,6 +147,23 @@ class PlotTask(QObject):
 
         self.do_next(free_space_for_plot=free_space_for_plot and self.is_new_plot)
 
+    def plotFailed(self, task, sub_task, continue_when_fail):
+        if task.current_sub_task != sub_task:
+            return
+
+        if not continue_when_fail:
+            return
+
+        _, _, temp_plot_size = self.get_temp_files()
+
+        if temp_plot_size:
+            return
+
+        if not self.delete_temp_files():
+            return
+
+        self.do_next()
+
     def do_next(self, check_able_to_next=True, free_space_for_plot=False):
         hdd_folders = HDDFolders()
 
@@ -155,7 +173,7 @@ class PlotTask(QObject):
                 check_able_to_next = False
         else:
             self.able_to_next = PlotTaskManager.is_task_able_to_next(self)
-            driver = os.path.splitdrive(self.hdd_folder)[0]
+            driver = split_drive(self.hdd_folder)[0]
             if not self.able_to_next and free_space_for_plot and \
                     hdd_folders.is_driver_have_old_plot(driver, need_size=get_k_size(self.k)):
                 check_able_to_next = False
@@ -821,6 +839,9 @@ class PlotWorker(QThread):
             if self.sub_task.progress >= progress:
                 return failed, finished
 
+            if is_debug() and progress > 50:
+                self.sub_task.worker.process.terminate()
+
             self.sub_task.progress = progress
             self.updateTask()
         elif text.startswith('Phase 1 took'):
@@ -1139,7 +1160,7 @@ class PlotWorker(QThread):
                     break
                 self.sub_task.hdd_folder = available_hdd_folder
             elif not self.task.able_to_next:
-                driver = os.path.splitdrive(self.task.hdd_folder)[0]
+                driver = split_drive(self.task.hdd_folder)[0]
                 need_size = PlotTaskManager.get_driver_running_size(driver, self)
                 need_size += get_k_size(self.task.k)
                 if self.task.is_new_plot and 'auto_delete_old_plot' in config and config['auto_delete_old_plot'] and \
@@ -1203,6 +1224,7 @@ class PlotWorker(QThread):
             self.task.running = False
 
             failed = False
+            continue_when_fail = False
 
             plot_path = os.path.join(self.sub_task.hdd_folder, self.plot_filename)
 
@@ -1216,6 +1238,7 @@ class PlotWorker(QThread):
                     self.sub_task.status = '内存不足'
                 else:
                     self.sub_task.status = '失败'
+                    continue_when_fail = 'continue_when_fail' in config and config['continue_when_fail']
             elif not self.plot_filename:
                 failed = True
                 self.sub_task.status = '没有plot文件名'
@@ -1263,6 +1286,8 @@ class PlotWorker(QThread):
                     self.updateTask(sub_task=self.sub_task)
 
                 self.updateTask()
+                self.task.signalPlotFailed.emit(self.task, self.sub_task, continue_when_fail)
+
                 break
 
     def updateTask(self, task=None, sub_task=None):
@@ -1325,7 +1350,7 @@ class PlotTaskManager(QObject):
         for running_object in running_folders:
             running_k = running_object[0]
             running_folder = running_object[1]
-            running_driver = os.path.splitdrive(running_folder)[0]
+            running_driver = split_drive(running_folder)[0]
             if driver == running_driver:
                 running_size += get_k_size(running_k)
 

@@ -5,6 +5,7 @@ from PyQt5.Qt import QThread, QObject
 from subprocess import Popen, PIPE, STDOUT, CREATE_NO_WINDOW
 import re
 from core import is_debug, BASE_DIR
+from core.disk import split_drive
 from time import time
 import os
 import time
@@ -284,7 +285,7 @@ class PlotCheckManager(QThread):
         if 'folder_infos' in kwargs:
             self.folder_infos = kwargs['folder_infos']
             for folder_info in self.folder_infos:
-                driver = os.path.splitdrive(folder_info.folder)[0]
+                driver = split_drive(folder_info.folder)[0]
                 if driver not in self.drivers:
                     self.drivers[driver] = []
                 self.drivers[driver].append(folder_info)

@@ -48,6 +48,7 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         self.checkBoxAutoDeleteOldPlot.stateChanged.connect(self.checkAutoDeleteOldPlot)
         self.spinBoxPhase1Count.valueChanged.connect(self.changePhase1LimitCount)
         self.spinBoxTotalCount.valueChanged.connect(self.changeTotalLimitCount)
+        self.checkBoxContinueWhenFail.stateChanged.connect(self.checkContinueWhenFail)
 
         self.buttonCreatePlot.clicked.connect(self.clickCreatePlot)
         self.buttonCreateBatchPlots.clicked.connect(self.clickCreateBatchPlots)
@@ -78,6 +79,9 @@ class PlotWidget(QWidget, Ui_PlotWidget):
         if 'auto_delete_old_plot' in config:
             self.checkBoxAutoDeleteOldPlot.setChecked(config['auto_delete_old_plot'])
 
+        if 'continue_when_fail' in config:
+            self.checkBoxContinueWhenFail.setChecked(config['continue_when_fail'])
+
     def load_tasks(self):
         if self.treePlot.topLevelItemCount() == 0:
             for task in self.task_manager.tasks:
@@ -101,6 +105,11 @@ class PlotWidget(QWidget, Ui_PlotWidget):
     def checkAutoDeleteOldPlot(self, i):
         config = get_config()
         config['auto_delete_old_plot'] = self.checkBoxAutoDeleteOldPlot.isChecked()
+        save_config()
+
+    def checkContinueWhenFail(self, i):
+        config = get_config()
+        config['continue_when_fail'] = self.checkBoxContinueWhenFail.isChecked()
         save_config()
 
     def changePhase1LimitCount(self):

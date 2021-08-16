@@ -3,6 +3,7 @@ from PyQt5.Qt import QThread
 from queue import Queue
 import psutil
 import os
+import functools
 from datetime import datetime, timedelta
 from utils.lock import RWlock
 from config import get_config
@@ -12,8 +13,41 @@ __disk_usage_cache = {}
 __disk_cache_lock = RWlock()
 
 
+def get_disk_partitions():
+    partitions = psutil.disk_partitions()
+    ret = []
+    for partition in partitions:
+        mountpoint = partition.mountpoint
+        mountpoint = mountpoint.replace('\\', '/')
+        mountpoint = mountpoint.strip('/')
+        mountpoint = mountpoint.lower()
+        ret.append(mountpoint)
+
+    def sort_func(a, b):
+        a_count = len(a.split('/'))
+        b_count = len(b.split('/'))
+        return b_count - a_count
+
+    ret.sort(key=functools.cmp_to_key(sort_func))
+
+    return ret
+
+
+def split_drive(path):
+    path = path.replace('\\', '/')
+    path = path.strip('/')
+    path = path.lower()
+    partitions = get_disk_partitions()
+
+    for partition in partitions:
+        if path.startswith(partition):
+            return partition, path[len(partition):]
+
+    return os.path.splitdrive(path)
+
+
 def set_disk_usage(folder, usage):
-    driver = os.path.splitdrive(folder)[0]
+    driver = split_drive(folder)[0]
 
     __disk_cache_lock.write_acquire()
     __disk_usage_cache[driver] = usage
@@ -21,7 +55,7 @@ def set_disk_usage(folder, usage):
 
 
 def get_disk_usage(folder, no_cache=False):
-    driver = os.path.splitdrive(folder)[0]
+    driver = split_drive(folder)[0]
     __disk_cache_lock.read_acquire()
     cache = __disk_usage_cache
     if no_cache:
