@@ -20,7 +20,6 @@ def get_disk_partitions():
         mountpoint = partition.mountpoint
         mountpoint = mountpoint.replace('\\', '/')
         mountpoint = mountpoint.strip('/')
-        mountpoint = mountpoint.lower()
         ret.append(mountpoint)
 
     def sort_func(a, b):
@@ -35,12 +34,11 @@ def get_disk_partitions():
 
 def split_drive(path):
     path = path.replace('\\', '/')
-    path = path.strip('/')
-    path = path.lower()
+    path = path.rstrip('/')
     partitions = get_disk_partitions()
 
     for partition in partitions:
-        if path.startswith(partition):
+        if path.lower().startswith(partition.lower()):
             return partition, path[len(partition):]
 
     return os.path.splitdrive(path)
