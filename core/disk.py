@@ -96,7 +96,10 @@ def split_drive(path, no_cache=False):
             break
 
         if new_usage.free != prev_usage.free:
-            drive = new_path
+            if prev_path == path:
+                drive = prev_path
+            else:
+                drive = new_path
             break
         prev_path = new_path
         prev_usage = new_usage
