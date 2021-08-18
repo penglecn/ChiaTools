@@ -32,18 +32,6 @@ def get_disk_partitions():
     return ret
 
 
-def split_drive(path):
-    path = path.replace('\\', '/')
-    path = path.rstrip('/')
-    partitions = get_disk_partitions()
-
-    for partition in partitions:
-        if path.lower().startswith(partition.lower()):
-            return partition, path[len(partition):]
-
-    return os.path.splitdrive(path)
-
-
 def set_disk_usage(folder, usage):
     driver = split_drive(folder)[0]
 
@@ -70,6 +58,52 @@ def get_disk_usage(folder, no_cache=False):
         __disk_cache_lock.read_release()
 
     return usage
+
+
+def cache_folder_usage(folder):
+    folder = folder.replace('\\', '/')
+    folder = folder.rstrip('/')
+
+    prev_path = folder
+    while True:
+        get_disk_usage(prev_path, no_cache=True)
+        new_path = os.path.dirname(prev_path)
+        new_path = new_path.rstrip('/')
+        if new_path == prev_path:
+            return
+        prev_path = new_path
+
+
+def split_drive(path, no_cache=False):
+    path = path.replace('\\', '/')
+    path = path.rstrip('/')
+
+    drive = ''
+
+    prev_path = path
+    prev_usage = get_disk_usage(path, no_cache)
+    if prev_usage is None:
+        return os.path.splitdrive(path)
+    while True:
+        new_path = os.path.dirname(prev_path)
+        new_path = new_path.rstrip('/')
+        if new_path == prev_path:
+            break
+
+        new_usage = get_disk_usage(new_path, no_cache)
+        if new_usage is None:
+            break
+
+        if new_usage.free != prev_usage.free:
+            drive = new_path
+            break
+        prev_path = new_path
+        prev_usage = new_usage
+
+    if drive:
+        return drive, path[len(drive):]
+
+    return os.path.splitdrive(path)
 
 
 class DiskOperation(QThread):

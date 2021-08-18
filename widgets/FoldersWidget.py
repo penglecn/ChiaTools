@@ -9,7 +9,7 @@ from config import save_config, get_config
 from utils import size_to_str, delta_to_str, seconds_to_str
 import psutil
 import os
-from core.disk import disk_operation, split_drive
+from core.disk import disk_operation, split_drive, cache_folder_usage
 from typing import Optional
 
 
@@ -123,6 +123,7 @@ class FoldersWidget(QWidget, Ui_FoldersWidget):
         self.updateSSDSpaces()
 
     def addHDDFolder(self, folder, mine, new_plot):
+        cache_folder_usage(folder)
         driver, _ = split_drive(folder)
 
         if not driver:
