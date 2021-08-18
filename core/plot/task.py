@@ -13,7 +13,7 @@ import pickle
 import platform
 from config import get_config
 from utils.lock import RWlock
-from core.disk import get_disk_usage, split_drive
+from core.disk import get_folder_usage, split_drive, get_folder_driver
 from core.driver import HDDFolders
 import random
 from utils.chia.pos import get_plot_id_and_memo
@@ -106,7 +106,7 @@ class PlotTask(QObject):
 
         folder = sub_task.hdd_folder
         driver = split_drive(folder)[0]
-        usage = get_disk_usage(driver, no_cache=True)
+        usage = get_folder_usage(driver, no_cache=True)
         if usage is None:
             return
 
@@ -1401,7 +1401,7 @@ class PlotTaskManager(QObject):
         running_folders = PlotTaskManager.get_all_running_hdd_folders(except_worker)
 
         folder = task.hdd_folder
-        usage = get_disk_usage(folder)
+        usage = get_folder_usage(get_folder_driver(folder))
         if usage is None:
             return False
         free = usage.free
@@ -1428,7 +1428,7 @@ class PlotTaskManager(QObject):
                 continue
             if not os.path.exists(folder):
                 continue
-            usage = get_disk_usage(folder)
+            usage = get_folder_usage(get_folder_driver(folder))
             if usage is None:
                 continue
             free = usage.free

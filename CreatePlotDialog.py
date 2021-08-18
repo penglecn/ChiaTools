@@ -8,7 +8,7 @@ import os
 from utils import make_name, size_to_str, get_k_size, get_k_temp_size, get_official_chia_exe, \
     seconds_to_str, is_chia_support_new_protocol
 from datetime import datetime
-from core.disk import get_disk_usage
+from core.disk import get_folder_usage, get_folder_driver
 from PyQt5.QtWidgets import QFileDialog
 from core import BASE_DIR, is_debug
 from core.wallet import wallet_manager
@@ -276,7 +276,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
     def get_folder_display_text(self, folder, new_plot=None):
         text = folder
         if os.path.exists(folder):
-            usage = get_disk_usage(folder)
+            usage = get_folder_usage(get_folder_driver(folder))
             text += f" ({size_to_str(usage.free)}空闲)"
         else:
             text += " (不存在)"
@@ -415,7 +415,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
         ssd_count_map = {}
 
         for ssd_folder in config['ssd_folders']:
-            usage = get_disk_usage(ssd_folder)
+            usage = get_folder_usage(get_folder_driver(ssd_folder))
             if not usage:
                 continue
             count = int(usage.total // k_temp_size)
@@ -896,7 +896,7 @@ class CreatePlotDialog(QDialog, Ui_CreatePlotDialog):
 
         able_to_start = True
         if hdd_folder != 'auto':
-            hdd_usage = get_disk_usage(hdd_folder)
+            hdd_usage = get_folder_usage(get_folder_driver(hdd_folder))
 
             if hdd_usage is None:
                 QMessageBox.information(self, '提示', f'目录{hdd_folder}无法使用')

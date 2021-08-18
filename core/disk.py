@@ -32,29 +32,26 @@ def get_disk_partitions():
     return ret
 
 
-def set_disk_usage(folder, usage):
-    driver = split_drive(folder)[0]
-
+def set_folder_usage(folder, usage):
     __disk_cache_lock.write_acquire()
-    __disk_usage_cache[driver] = usage
+    __disk_usage_cache[folder] = usage
     __disk_cache_lock.write_release()
 
 
-def get_disk_usage(folder, no_cache=False):
-    driver = split_drive(folder)[0]
+def get_folder_usage(folder, no_cache=False):
     __disk_cache_lock.read_acquire()
     cache = __disk_usage_cache
     if no_cache:
         cache = {}
-    if driver not in cache:
+    if folder not in cache:
         __disk_cache_lock.read_release()
         try:
-            usage = psutil.disk_usage(driver)
-            set_disk_usage(driver, usage)
+            usage = psutil.disk_usage(folder)
+            set_folder_usage(folder, usage)
         except:
             return None
     else:
-        usage = cache[driver]
+        usage = cache[folder]
         __disk_cache_lock.read_release()
 
     return usage
@@ -66,12 +63,16 @@ def cache_folder_usage(folder):
 
     prev_path = folder
     while True:
-        get_disk_usage(prev_path, no_cache=True)
+        get_folder_usage(prev_path, no_cache=True)
         new_path = os.path.dirname(prev_path)
         new_path = new_path.rstrip('/')
         if new_path == prev_path:
             return
         prev_path = new_path
+
+
+def get_folder_driver(folder, no_cache=False):
+    return split_drive(folder, no_cache=no_cache)[0]
 
 
 def split_drive(path, no_cache=False):
@@ -81,7 +82,7 @@ def split_drive(path, no_cache=False):
     drive = ''
 
     prev_path = path
-    prev_usage = get_disk_usage(path, no_cache)
+    prev_usage = get_folder_usage(path, no_cache)
     if prev_usage is None:
         return os.path.splitdrive(path)
     while True:
@@ -90,7 +91,7 @@ def split_drive(path, no_cache=False):
         if new_path == prev_path:
             break
 
-        new_usage = get_disk_usage(new_path, no_cache)
+        new_usage = get_folder_usage(new_path, no_cache)
         if new_usage is None:
             break
 
@@ -211,7 +212,7 @@ class DiskOperation(QThread):
                 folder_usage['total'] = usage.total
                 folder_usage['percent'] = usage.percent
 
-                set_disk_usage(driver, usage)
+                set_folder_usage(driver, usage)
             except:
                 pass
 
