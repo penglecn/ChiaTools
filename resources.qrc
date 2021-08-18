@@ -2,4 +2,8 @@
   <qresource prefix="lang">
     <file>qt_zh_CN.qm</file>
   </qresource>
+  <qresource prefix="img">
+    <file alias="donate_alipay">images/donation02.jpg</file>
+    <file alias="donate_weixin">images/donation01.jpg</file>
+  </qresource>
 </RCC>

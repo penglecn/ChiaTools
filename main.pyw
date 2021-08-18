@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTranslator
-import resources
+import resources_rc
 from MainWindow import MainWindow
 from config import load_config
 

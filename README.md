@@ -181,7 +181,7 @@ C:\Users\Administrator\AppData\Local\chia-blockchain\app-1.1.7\resources\app.asa
 XCH打赏地址
 
 ```
-xch18gf3cz4cdhse570weewd7fxxum03xsur2zapjwy57la8t3zvv4aqfy6j99
+xch1zdnvg4xpfzm6smadxfckmg8ma3q7sq0hwsamjapjg75ztsm8fclqqk5tuu
 ```
 
 捐款码
